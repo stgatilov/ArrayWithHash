@@ -352,10 +352,10 @@ public:
 
 	//remove all elements without shrinking
 	void Clear() {
-    if (arraySize && arrayCount)
-		  std::fill_n(arrayValues.get(), arraySize, EMPTY_VALUE);
-    if (hashSize && hashFill)
-		  std::fill_n(hashKeys.get(), hashSize, EMPTY_KEY);
+		if (arraySize && arrayCount)
+			std::fill_n(arrayValues.get(), arraySize, EMPTY_VALUE);
+		if (hashSize && hashFill)
+			std::fill_n(hashKeys.get(), hashSize, EMPTY_KEY);
 		arrayCount = hashCount = hashFill = 0;
 	}
 
@@ -754,10 +754,10 @@ public:
 			sum += key * 10 + Key(value);
 			return false;
 		};
-    sum = 0;
+		sum = 0;
 		obj.ForEach(Add);
 		Key a = sum;
-    sum = 0;
+		sum = 0;
 		check.ForEach(Add);
 		Key b = sum;
 		assert(a == b);
