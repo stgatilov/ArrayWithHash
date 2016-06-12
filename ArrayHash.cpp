@@ -350,6 +350,13 @@ public:
 		std::swap(hashKeys, other.hashKeys);
 	}
 
+	//remove all elements without shrinking
+	void Clear() {
+		arrayCount = hashCount = 0;
+		std::fill_n(arrayValues.get(), arraySize, EMPTY_VALUE);
+		std::fill_n(hashKeys.get(), hashSize, EMPTY_KEY);
+	}
+
 	inline Size GetSize() const {
 		return arrayCount + hashCount;
 	}
