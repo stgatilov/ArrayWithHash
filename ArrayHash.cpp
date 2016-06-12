@@ -1115,16 +1115,16 @@ void SpeedAll() {
 }
 
 int main() {
-//	SpeedAll();
+	SpeedAll();
 
 	std::mt19937 rnd;
 	while (1) TestsRound(rnd);
 
+	while (1) {
+		double q = Speed_GrowthHashRandom<ArrayHash>(100000, 100);
+		std::cout << q;
+	}
 
-	double q = Speed_GrowthHashRandom<ArrayHash>(100000, 100);
-	std::cout << q;
-	while (1) Speed_GrowthHashRandom<ArrayHash>(100000, 100);
-*/
 	return 0;
 }
 
