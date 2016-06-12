@@ -352,9 +352,11 @@ public:
 
 	//remove all elements without shrinking
 	void Clear() {
-		arrayCount = hashCount = 0;
-		std::fill_n(arrayValues.get(), arraySize, EMPTY_VALUE);
-		std::fill_n(hashKeys.get(), hashSize, EMPTY_KEY);
+    if (arraySize && arrayCount)
+		  std::fill_n(arrayValues.get(), arraySize, EMPTY_VALUE);
+    if (hashSize && hashFill)
+		  std::fill_n(hashKeys.get(), hashSize, EMPTY_KEY);
+		arrayCount = hashCount = hashFill = 0;
 	}
 
 	inline Size GetSize() const {
@@ -747,13 +749,15 @@ public:
 		obj.AssertCorrectness(assertLevel);
 	}
 	Key CalcCheckSum() const {
-		Key sum = 0;
+		Key sum;
 		auto Add = [&sum](Key key, Value &value) -> bool {
 			sum += key * 10 + Key(value);
 			return false;
 		};
+    sum = 0;
 		obj.ForEach(Add);
 		Key a = sum;
+    sum = 0;
 		check.ForEach(Add);
 		Key b = sum;
 		assert(a == b);
@@ -867,6 +871,14 @@ void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operatio
 void TestsRound(std::mt19937 &rnd) {
 	{
 		TestContainer dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
+	}
+	{
+		TestContainer dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
+	}
+	{
+		TestContainer dict;
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
 	}
 	{
@@ -895,14 +907,6 @@ void TestsRound(std::mt19937 &rnd) {
 	{
 		TestContainer dict;
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
-	}
-	{
-		TestContainer dict;
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
-	}
-	{
-		TestContainer dict;
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
 	}
 }
 
