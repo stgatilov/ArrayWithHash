@@ -4,3 +4,6 @@ syntax: glob
 *.obj
 plan.txt
 vcproj/*
+*.pdb
+*.ilk
+*.orig
