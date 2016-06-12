@@ -193,60 +193,40 @@ class ArrayHash {
 		hashFill = hashCount;
 	}
 
-	void RelocateHashToNew(Size newHashSize) {
-		ARRAYHASH_LOG("Relocate hash (%d -> %d)\n", hashSize, newHashSize);
-
-		std::unique_ptr<Key[]> newHashKeys(AllocateBuffer<Key, false>(newHashSize));
-		std::uninitialized_fill_n(newHashKeys.get(), newHashSize, EMPTY_KEY);
-		std::unique_ptr<Value[]> newHashValues(AllocateBuffer<Value>(newHashSize));
-
-		std::swap(hashKeys, newHashKeys);
-		std::swap(hashValues, newHashValues);
-		std::swap(hashSize, newHashSize);
-		//Note: new* are now actually old values
-		
-		for (Size i = 0; i < newHashSize; i++) {
-			Key key = newHashKeys[i];
-			if (key == EMPTY_KEY || key == REMOVED_KEY)
-				continue;
-			const Value &value = newHashValues[i];
-			Size cell = FindCellEmpty(key);
-			hashKeys[cell] = key;
-			hashValues[cell] = value;
-		}
-
-		//forget about removed entries
-		hashFill = hashCount;
-	}
-
-	void RelocateArrayAndHash(Size newArraySize, Size newHashSize) {
+	template<bool RELOC_ARRAY> void RelocateHashToNew(Size newHashSize, Size newArraySize) {
 		ARRAYHASH_LOG("Relocate array (%d -> %d) and hash (%d -> %d)\n", arraySize, newArraySize, hashSize, newHashSize);
 
-		std::unique_ptr<Value[]> newArrayValues(AllocateBuffer<Value, false>(newArraySize));
-		//Note: trivial relocation
-		memcpy(newArrayValues.get(), arrayValues.get(), arraySize * sizeof(Value));
-		operator delete[](arrayValues.release());
-		//std::uninitialized_copy_n(arrayValues.get(), arraySize, newArrayValues.get());
-		std::uninitialized_fill_n(newArrayValues.get() + arraySize, newArraySize - arraySize, EMPTY_VALUE);
+		//relocate array if required
+		if (RELOC_ARRAY) {
+			std::unique_ptr<Value[]> newArrayValues(AllocateBuffer<Value, false>(newArraySize));
+			//Note: trivial relocation
+			memcpy(newArrayValues.get(), arrayValues.get(), arraySize * sizeof(Value));
+			operator delete[](arrayValues.release());
+			//std::uninitialized_copy_n(arrayValues.get(), arraySize, newArrayValues.get());
+			std::uninitialized_fill_n(newArrayValues.get() + arraySize, newArraySize - arraySize, EMPTY_VALUE);
 
+			std::swap(arrayValues, newArrayValues);
+			std::swap(arraySize, newArraySize);
+		}
+
+		//create new hash table and swap with it
 		std::unique_ptr<Key[]> newHashKeys(AllocateBuffer<Key, false>(newHashSize));
 		std::uninitialized_fill_n(newHashKeys.get(), newHashSize, EMPTY_KEY);
 		std::unique_ptr<Value[]> newHashValues(AllocateBuffer<Value>(newHashSize));
 
-		std::swap(arrayValues, newArrayValues);
-		std::swap(arraySize, newArraySize);
 		std::swap(hashKeys, newHashKeys);
 		std::swap(hashValues, newHashValues);
 		std::swap(hashSize, newHashSize);
 		//Note: new* are now actually old values
+
 		Size totalCount = arrayCount + hashCount;
-		
+
 		for (Size i = 0; i < newHashSize; i++) {
 			Key key = newHashKeys[i];
 			if (key == EMPTY_KEY || key == REMOVED_KEY)
 				continue;
 			const Value &value = newHashValues[i];
-			if (InArray(key)) {
+			if (RELOC_ARRAY && InArray(key)) {
 				arrayValues[key] = value;
 				arrayCount++;
 			}
@@ -257,8 +237,10 @@ class ArrayHash {
 			}
 		}
 
-		//calculate hash count and forget about removed entries
-		hashCount = totalCount - arrayCount;
+		//update hash count
+		if (RELOC_ARRAY)
+			hashCount = totalCount - arrayCount;
+		//forget about removed entries
 		hashFill = hashCount;
 	}
 
@@ -268,9 +250,9 @@ class ArrayHash {
 		if (newArraySize == arraySize && newHashSize == hashSize)
 			RelocateHashInPlace();
 		else if (newArraySize == arraySize)
-			RelocateHashToNew(newHashSize);
+			RelocateHashToNew<false>(newHashSize, newArraySize);
 		else
-			RelocateArrayAndHash(newArraySize, newHashSize);
+			RelocateHashToNew<true>(newHashSize, newArraySize);
 	}
 
 
