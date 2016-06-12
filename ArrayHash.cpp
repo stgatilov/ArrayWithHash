@@ -339,6 +339,17 @@ public:
 
 	ArrayHash() : arraySize(0), hashSize(0), arrayCount(0), hashCount(0), hashFill(0) {}
 
+	void swap(ArrayHash &other) {
+		std::swap(arraySize, other.arraySize);
+		std::swap(arrayCount, other.arrayCount);
+		std::swap(hashSize, other.hashSize);
+		std::swap(hashCount, other.hashCount);
+		std::swap(hashFill, other.hashFill);
+		std::swap(arrayValues, other.arrayValues);
+		std::swap(hashValues, other.hashValues);
+		std::swap(hashKeys, other.hashKeys);
+	}
+
 	inline Size GetSize() const {
 		return arrayCount + hashCount;
 	}
@@ -514,6 +525,12 @@ public:
 		return true;
 	}
 
+};
+
+namespace std {
+	void swap(ArrayHash &a, ArrayHash &b) {
+		a.swap(b);
+	}
 };
 
 //========================================================================================
