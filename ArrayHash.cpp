@@ -30,22 +30,36 @@ inline Size HashFunction(Key key) {
 	return Size(2654435761) * Size(key);
 }
 
-Size log2up(Size sz) {
-	Size res = 0;
-	while (res < 8 * sizeof(Size) && (Size(1) << res) < sz)
-		res++;
-	return res;
-}
-Size log2size(Size sz) {
+//default slow implementations
+template<class Size> Size log2size(Size sz) {
 	Size res = 0;
 	while (res < 8 * sizeof(Size) && (Size(1) << res) <= sz)
 		res++;
 	return res;
-/*	unsigned long pos;
-	if (!_BitScanReverse(&pos, (unsigned long)sz))
-		pos = -1;
-	return pos + 1;*/
 }
+template<class Size> Size log2up(Size sz) {
+	return sz == 0 ? 0 : log2size(sz - 1);
+}
+
+//fast implementations
+//TODO: MSVC check
+inline uint32_t log2size(uint32_t sz) {
+	unsigned long pos;
+	if (!_BitScanReverse(&pos, (unsigned long)sz))		//bsr
+		pos = -1;		//branchless
+	return uint32_t(pos) + 1;
+}
+//TODO: x64 architecture check
+inline uint64_t log2size(uint64_t sz) {
+	unsigned long pos;
+	if (!_BitScanReverse64(&pos, (unsigned __int64)sz))
+		pos = -1;
+	return uint64_t(pos) + 1;
+}
+//TODO: gcc alternative
+inline uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz)); }
+inline uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
+
 
 static const double ARRAY_MIN_FILL = 0.45;
 static const double HASH_MIN_FILL = 0.30;
