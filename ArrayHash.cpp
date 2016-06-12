@@ -41,6 +41,10 @@ Size log2size(Size sz) {
 	while (res < 8 * sizeof(Size) && (Size(1) << res) <= sz)
 		res++;
 	return res;
+/*	unsigned long pos;
+	if (!_BitScanReverse(&pos, (unsigned long)sz))
+		pos = -1;
+	return pos + 1;*/
 }
 
 static const double ARRAY_MIN_FILL = 0.45;
