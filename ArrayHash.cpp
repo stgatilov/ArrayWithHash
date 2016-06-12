@@ -1031,7 +1031,7 @@ template<class Container> double Speed_SetArrayRandomMix(int size, int repeats) 
 	for (int i = 0; i < repeats / 2; i++) {
 		Container cont;
 		cont.Reserve(size, 0);
-		for (int j = 0; j < perm.size(); j++)
+		for (size_t j = 0; j < perm.size(); j++)
 			cont.Set(perm[j], j*j);
 	}
 
@@ -1052,7 +1052,7 @@ template<class Container> double Speed_SetIfNewArrayRandomMix(int size, int repe
 	for (int i = 0; i < repeats / 2; i++) {
 		Container cont;
 		cont.Reserve(size, 0);
-		for (int j = 0; j < perm.size(); j++)
+		for (size_t j = 0; j < perm.size(); j++)
 			cont.SetIfNew(perm[j], j*j);
 	}
 
