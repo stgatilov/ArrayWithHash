@@ -24,6 +24,7 @@ inline bool IsEmpty(Value value) { return value == EMPTY_VALUE; }
 inline void SetEmpty(Value &value) { value = EMPTY_VALUE; }
 
 inline Size HashFunction(Key key) {
+	//Knuth's function: http://stackoverflow.com/a/665545/556899
 	return Size(2654435761) * Size(key);
 }
 
