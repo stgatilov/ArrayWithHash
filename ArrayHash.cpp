@@ -771,6 +771,7 @@ public:
 #include <numeric>
 #include <ctime>
 #include <random>
+#include <cstring>
 
 #include "timer.h"
 inline double my_clock() {
