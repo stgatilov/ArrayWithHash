@@ -40,7 +40,7 @@ template<class Size> Size log2up(Size sz) {
 }
 
 //fast implementations
-//TODO: MSVC check
+#if _MSC_VER >= 1600
 inline uint32_t log2size(uint32_t sz) {
 	unsigned long pos;
 	if (!_BitScanReverse(&pos, (unsigned long)sz))		//bsr
@@ -54,6 +54,7 @@ inline uint64_t log2size(uint64_t sz) {
 		pos = -1;
 	return uint64_t(pos) + 1;
 }
+#endif
 //TODO: gcc alternative
 inline uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz)); }
 inline uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
