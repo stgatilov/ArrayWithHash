@@ -612,6 +612,7 @@ public:
 		//chenge to true if you want to see a problematic test
 		printCommands = false;
 #ifdef NDEBUG
+		printf("asserts must be enabled for test!");
 		throw "asserts must be enabled for test!";
 #endif
 	}
@@ -1119,7 +1120,7 @@ int main() {
 	std::mt19937 rnd;
 	while (1) TestsRound(rnd);
 
-/*
+
 	double q = Speed_GrowthHashRandom<ArrayHash>(100000, 100);
 	std::cout << q;
 	while (1) Speed_GrowthHashRandom<ArrayHash>(100000, 100);
