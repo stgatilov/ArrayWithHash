@@ -48,21 +48,36 @@ template<class Size> Size log2up(Size sz) {
 
 //fast implementations
 #if _MSC_VER >= 1600
-inline uint32_t log2size(uint32_t sz) {
-	unsigned long pos;
-	if (!_BitScanReverse(&pos, (unsigned long)sz))		//bsr
-		pos = -1;		//branchless
-	return uint32_t(pos) + 1;
-}
-//TODO: x64 architecture check
-inline uint64_t log2size(uint64_t sz) {
-	unsigned long pos;
-	if (!_BitScanReverse64(&pos, (unsigned __int64)sz))
-		pos = -1;
-	return uint64_t(pos) + 1;
-}
+	inline uint32_t log2size(uint32_t sz) {
+		unsigned long pos;
+		if (!_BitScanReverse(&pos, (unsigned long)sz))		//bsr
+			pos = -1;		//branchless
+		return uint32_t(pos) + 1;
+	}
+	#if defined(_M_X64)
+	inline uint64_t log2size(uint64_t sz) {
+		unsigned long pos;
+		if (!_BitScanReverse64(&pos, (unsigned __int64)sz))
+			pos = -1;
+		return uint64_t(pos) + 1;
+	}
+	#endif
+#elif __GNUC__
+	inline uint32_t log2size(uint32_t sz) {
+		int pos = 31 ^ __builtin_clz((unsigned int)sz);		//bsr
+		pos++;
+		pos = (sz == 0 ? 0 : pos);	//branch on mingw?...
+		return uint32_t(pos);
+	}
+	#if defined(__amd64__)
+	inline uint64_t log2size(uint64_t sz) {
+		int pos = 63 ^ __builtin_clzll((unsigned long long)sz);
+		pos++;
+		pos = (sz == 0 ? 0 : pos);
+		return uint64_t(pos);
+	}
+	#endif
 #endif
-//TODO: gcc alternative
 inline uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz)); }
 inline uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
 
@@ -1220,6 +1235,11 @@ int main(int argc, char **argv) {
 		return 666;
 	}
 
+/*	while (1) {
+		double q = Speed_GrowthHashRandom<ArrayHash>(100000, 100);
+		std::cout << q << "\n";
+	}*/
+
 	for (int i = 1; i < argc; i++) {
 		if (strcmp(argv[i], "-q") == 0)
 			quietTests = true;
@@ -1233,11 +1253,6 @@ int main(int argc, char **argv) {
 			while (1) TestsRound(rnd, lvl);
 		}
 	}
-
-/*	while (1) {
-		double q = Speed_GrowthHashRandom<ArrayHash>(100000, 100);
-		std::cout << q;
-	}*/
 
 	return 0;
 }
