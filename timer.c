@@ -139,7 +139,7 @@ deltatime_t timer_ticks_to_seconds( const tick_t dt )
 	return (deltatime_t)( (double)dt * _timerlib_oofreq );
 }
 
-
+/*
 #if TIMER_PLATFORM_WINDOWS
 struct __timeb64 {
 	__time64_t time;
@@ -172,3 +172,4 @@ tick_t timer_system( void )
 
 #endif
 }
+*/

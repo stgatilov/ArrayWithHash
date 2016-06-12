@@ -23,18 +23,9 @@
 #endif
 #endif
 
-#if defined( _WIN32 ) || defined( _WIN64 )
-
-//! Tick type
-typedef unsigned __int64 tick_t;
-
-#else
-
 #include <stdint.h>
 //! Tick type
 typedef uint64_t         tick_t;
-
-#endif
 
 //! Deltatime type (float or double)
 //typedef float            deltatime_t;
