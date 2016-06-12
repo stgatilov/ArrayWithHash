@@ -339,7 +339,7 @@ public:
 
 	ArrayHash() : arraySize(0), hashSize(0), arrayCount(0), hashCount(0), hashFill(0) {}
 
-	void swap(ArrayHash &other) {
+	void Swap(ArrayHash &other) {
 		std::swap(arraySize, other.arraySize);
 		std::swap(arrayCount, other.arrayCount);
 		std::swap(hashSize, other.hashSize);
@@ -551,7 +551,7 @@ public:
 
 namespace std {
 	void swap(ArrayHash &a, ArrayHash &b) {
-		a.swap(b);
+		a.Swap(b);
 	}
 };
 
@@ -578,6 +578,12 @@ public:
 		inline Value &operator-> () const { return it->second; }
 	};
 
+	inline void Swap(StdMapWrapper &other) {
+		std::swap(dict, other.dict);
+	}
+	inline void Clear() {
+		dict.clear();
+	}
 	inline Size GetSize() const {
 		return dict.size();
 	}
@@ -607,6 +613,12 @@ public:
 		return ptr.it->first;
 	}
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {}
+
+	template<class Action> void ForEach(Action action) const {
+		for (Iter it = const_cast<Map&>(dict).begin(); it != const_cast<Map&>(dict).end(); it++)
+			if (action(Key(it->first), it->second));
+				return;
+	}
 
 	//for testing only
 	template<class Rnd> Key SomeKey(Rnd &rnd) const {
@@ -720,6 +732,32 @@ public:
 		obj.Reserve(arraySizeLB, hashSizeLB, alwaysCleanHash);
 		check.Reserve(arraySizeLB, hashSizeLB, alwaysCleanHash);
 		obj.AssertCorrectness(assertLevel);
+	}
+	void Swap(TestContainer &other) {
+		if (printCommands) std::cout << "Swap" << std::endl;
+		obj.Swap(other.obj);
+		check.Swap(other.check);
+		obj.AssertCorrectness(assertLevel);
+		other.obj.AssertCorrectness(assertLevel);
+	}
+	void Clear() {
+		if (printCommands) std::cout << "Clear" << std::endl;
+		obj.Clear();
+		check.Clear();
+		obj.AssertCorrectness(assertLevel);
+	}
+	Key CalcCheckSum() const {
+		Key sum = 0;
+		auto Add = [&sum](Key key, Value &value) -> bool {
+			sum += key * 10 + Key(value);
+			return false;
+		};
+		obj.ForEach(Add);
+		Key a = sum;
+		check.ForEach(Add);
+		Key b = sum;
+		assert(a == b);
+		return a;
 	}
 
 	//for testing only
