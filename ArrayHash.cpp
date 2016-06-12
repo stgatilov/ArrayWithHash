@@ -648,15 +648,6 @@ class TestContainer {
 		return Same(*a, *b);
 	}
 
-	#define ASSERT_AND_REPEAT(condition, action) {\
-		bool ok = condition; \
-		if (!ok) { \
-			fprintf(stderr, "Assertion failed: %s\n", #condition); \
-			__debugbreak(); \
-			action; \
-		} \
-	}
-
 public:
 	int assertLevel;
 	bool printCommands;
@@ -675,14 +666,14 @@ public:
 		if (printCommands) std::cout << "GetSize" << std::endl;
 		Size a = obj.GetSize();
 		Size b = check.GetSize();
-		ASSERT_AND_REPEAT(a == b, obj.GetSize());
+		assert(a == b);
 		return a;
 	}
 	Value Get(Key key) const {
 		if (printCommands) std::cout << "Get " << key << std::endl;
 		Value a = obj.Get(key);
 		Value b = check.Get(key);
-		ASSERT_AND_REPEAT(Same(a, b), obj.Get(key));
+		assert(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -690,7 +681,7 @@ public:
 		if (printCommands) std::cout << "GetPtr " << key << std::endl;
 		Value *a = obj.GetPtr(key);
 		StdMapWrapper::Ptr b = check.GetPtr(key);
-		ASSERT_AND_REPEAT(Same(a, b), obj.GetPtr(key));
+		assert(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -727,7 +718,7 @@ public:
 		if (printCommands) std::cout << "KeyOf " << ptr << std::endl;
 		Key a = obj.KeyOf(ptr);
 		Key b = check.KeyOf(check.GetPtr(a));
-		ASSERT_AND_REPEAT(a == b, obj.KeyOf(ptr));
+		assert(a == b);
 	}
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 		if (printCommands) std::cout << "Reserve " << arraySizeLB << " " << hashSizeLB << " " << alwaysCleanHash << std::endl;
