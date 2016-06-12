@@ -1129,7 +1129,7 @@ template<class Container> double Speed_GetPtrArrayRandomMix(int size, int repeat
 	for (int i = 0; i < repeats; i++) {
 		size_t sum = 0;
 		for (int j = 0; j < size; j++)
-			sum &= (size_t)cont.GetPtr(keys[j]);
+			sum ^= (size_t)cont.GetPtr(keys[j]);
 		tmp += sum;
 	}
 
