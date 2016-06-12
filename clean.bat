@@ -1,1 +1,1 @@
-del *.obj *.ilk *.asm *.pdb *.exe
+del *.obj *.ilk *.asm *.pdb *.exe *.s
