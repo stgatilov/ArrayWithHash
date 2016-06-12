@@ -12,6 +12,13 @@
 //   zero-byte empty? NO
 // shrinking? NO
 
+#define ASSERT_ALWAYS(expr) { \
+	if (!(expr)) { \
+		fprintf(stderr, "Assertion failed: %s in %s:%s\n", #expr, __FILE__, __LINE__); \
+		assert(#expr != 0); \
+	} \
+}
+
 typedef int32_t Key;
 typedef int32_t Value;
 typedef std::make_unsigned<Key>::type Size;
@@ -492,17 +499,17 @@ public:
 	bool AssertCorrectness(int verbosity = 2) const {
 		if (verbosity >= 0) {
 			//check array/hash sizes
-			assert(arraySize == 0 || arraySize >= ARRAY_MIN_SIZE);
-			assert( hashSize == 0 ||  hashSize >=  HASH_MIN_SIZE);
-			assert((arraySize & (arraySize - 1)) == 0);
-			assert(( hashSize & ( hashSize - 1)) == 0);
+			ASSERT_ALWAYS(arraySize == 0 || arraySize >= ARRAY_MIN_SIZE);
+			ASSERT_ALWAYS( hashSize == 0 ||  hashSize >=  HASH_MIN_SIZE);
+			ASSERT_ALWAYS((arraySize & (arraySize - 1)) == 0);
+			ASSERT_ALWAYS(( hashSize & ( hashSize - 1)) == 0);
 			//check buffers
-			assert(follows(arraySize == 0, !arrayValues.get()));
-			assert(follows(arraySize != 0,  arrayValues.get()));
-			assert(follows( hashSize == 0,  !hashValues.get() && !hashKeys.get()));
-			assert(follows( hashSize != 0,   hashValues.get() &&  hashKeys.get()));
+			ASSERT_ALWAYS(follows(arraySize == 0, !arrayValues.get()));
+			ASSERT_ALWAYS(follows(arraySize != 0,  arrayValues.get()));
+			ASSERT_ALWAYS(follows( hashSize == 0,  !hashValues.get() && !hashKeys.get()));
+			ASSERT_ALWAYS(follows( hashSize != 0,   hashValues.get() &&  hashKeys.get()));
 			//check hash fill ratio
-			assert(hashFill <= HASH_MAX_FILL * hashSize);
+			ASSERT_ALWAYS(hashFill <= HASH_MAX_FILL * hashSize);
 		}
 		if (verbosity >= 1) {
 			//iterate over array
@@ -512,21 +519,21 @@ public:
 					continue;
 				trueArrayCount++;
 			}
-			assert(arrayCount == trueArrayCount);
+			ASSERT_ALWAYS(arrayCount == trueArrayCount);
 			//iterate over hash table
 			Size trueHashCount = 0, trueHashFill = 0;
 			for (Size i = 0; i < hashSize; i++) {
 				Key key = hashKeys[i];
 				const Value &value = hashValues[i];
-				assert(Size(key) >= arraySize);
+				ASSERT_ALWAYS(Size(key) >= arraySize);
 				if (key != EMPTY_KEY)
 					trueHashFill++;
 				if (key != EMPTY_KEY && key != REMOVED_KEY) {
 					trueHashCount++;
-					assert(!IsEmpty(value));
+					ASSERT_ALWAYS(!IsEmpty(value));
 				}
 			}
-			assert(hashCount == trueHashCount && hashFill == trueHashFill);
+			ASSERT_ALWAYS(hashCount == trueHashCount && hashFill == trueHashFill);
 		}
 		if (verbosity >= 2) {
 			//hash verbose check: keys are unique
@@ -535,7 +542,7 @@ public:
 				Key key = hashKeys[i];
 				if (key == EMPTY_KEY || key == REMOVED_KEY)
 					continue;
-				assert(keys.count(key) == 0);
+				ASSERT_ALWAYS(keys.count(key) == 0);
 				keys.insert(key);
 			}
 			//hash verbose check: key placed near hash function value
@@ -544,7 +551,7 @@ public:
 				if (key == EMPTY_KEY || key == REMOVED_KEY)
 					continue;
 				Size cell = FindCellKeyOrEmpty(key);
-				assert(hashKeys[cell] == key);
+				ASSERT_ALWAYS(hashKeys[cell] == key);
 			}
 		}
 		return true;
@@ -657,24 +664,20 @@ public:
 		assertLevel = 2;
 		//chenge to true if you want to see a problematic test
 		printCommands = false;
-#ifdef NDEBUG
-		printf("asserts must be enabled for test!");
-		throw "asserts must be enabled for test!";
-#endif
 	}
 
 	Size GetSize() const {
 		if (printCommands) std::cout << "GetSize" << std::endl;
 		Size a = obj.GetSize();
 		Size b = check.GetSize();
-		assert(a == b);
+		ASSERT_ALWAYS(a == b);
 		return a;
 	}
 	Value Get(Key key) const {
 		if (printCommands) std::cout << "Get " << key << std::endl;
 		Value a = obj.Get(key);
 		Value b = check.Get(key);
-		assert(Same(a, b));
+		ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -682,7 +685,7 @@ public:
 		if (printCommands) std::cout << "GetPtr " << key << std::endl;
 		Value *a = obj.GetPtr(key);
 		StdMapWrapper::Ptr b = check.GetPtr(key);
-		assert(Same(a, b));
+		ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -690,7 +693,7 @@ public:
 		if (printCommands) std::cout << "Set " << key << " " << value << std::endl;
 		Value *a = obj.Set(key, value);
 		StdMapWrapper::Ptr b = check.Set(key, value);
-		assert(Same(a, b));
+		ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -698,7 +701,7 @@ public:
 		if (printCommands) std::cout << "SetIfNew " << key << " " << value << std::endl;
 		Value *a = obj.SetIfNew(key, value);
 		StdMapWrapper::Ptr b = check.SetIfNew(key, value);
-		assert(Same(a, b));
+		ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -719,7 +722,7 @@ public:
 		if (printCommands) std::cout << "KeyOf " << ptr << std::endl;
 		Key a = obj.KeyOf(ptr);
 		Key b = check.KeyOf(check.GetPtr(a));
-		assert(a == b);
+		ASSERT_ALWAYS(a == b);
 	}
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 		if (printCommands) std::cout << "Reserve " << arraySizeLB << " " << hashSizeLB << " " << alwaysCleanHash << std::endl;
@@ -752,7 +755,7 @@ public:
 		sum = 0;
 		check.ForEach(Add);
 		Key b = sum;
-		assert(a == b);
+		ASSERT_ALWAYS(a == b);
 		return a;
 	}
 
