@@ -239,8 +239,8 @@ class ArrayHash {
 		std::swap(hashValues, newHashValues);
 		std::swap(hashSize, newHashSize);
 		//Note: new* are now actually old values
+		Size totalCount = arrayCount + hashCount;
 		
-		hashCount = 0;
 		for (Size i = 0; i < newHashSize; i++) {
 			Key key = newHashKeys[i];
 			if (key == EMPTY_KEY || key == REMOVED_KEY)
@@ -254,11 +254,11 @@ class ArrayHash {
 				Size cell = FindCellEmpty(key);
 				hashKeys[cell] = key;
 				hashValues[cell] = value;
-				hashCount++;
 			}
 		}
 
-		//forget about removed entries
+		//calculate hash count and forget about removed entries
+		hashCount = totalCount - arrayCount;
 		hashFill = hashCount;
 	}
 
