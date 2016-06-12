@@ -12,9 +12,6 @@
 //   zero-byte empty? NO
 // shrinking? NO
 
-#include <cstdio>
-#define ARRAYHASH_LOG(...) //fprintf(stderr, __VA_ARGS__)
-
 typedef int32_t Key;
 typedef int32_t Value;
 typedef std::make_unsigned<Key>::type Size;
@@ -174,8 +171,6 @@ class ArrayHash {
 	}
 
 	template<bool RELOC_ARRAY> void RelocateHashInPlace(Size newArraySize) {
-		ARRAYHASH_LOG("Clean hash (%d) and relocate array (%d -> %d)\n", hashSize, arraySize, newArraySize);
-
 		//relocate array if required
 		if (RELOC_ARRAY)
 			RelocateArrayPart(newArraySize);
@@ -222,8 +217,6 @@ class ArrayHash {
 	}
 
 	template<bool RELOC_ARRAY> void RelocateHashToNew(Size newHashSize, Size newArraySize) {
-		ARRAYHASH_LOG("Relocate array (%d -> %d) and hash (%d -> %d)\n", arraySize, newArraySize, hashSize, newHashSize);
-
 		//relocate array if required
 		if (RELOC_ARRAY)
 			RelocateArrayPart(newArraySize);
