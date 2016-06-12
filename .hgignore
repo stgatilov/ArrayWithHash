@@ -1,0 +1,6 @@
+syntax: glob
+*.asm
+*.exe
+*.obj
+plan.txt
+vcproj/*
