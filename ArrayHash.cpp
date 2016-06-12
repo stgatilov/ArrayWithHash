@@ -161,14 +161,34 @@ class ArrayHash {
 		Reallocate(newArraySize, newHashSize);
 	}
 
-	void RelocateHashInPlace() {
+	void RelocateArrayPart(Size &newArraySize) {
+		std::unique_ptr<Value[]> newArrayValues(AllocateBuffer<Value, false>(newArraySize));
+		//Note: trivial relocation
+		memcpy(newArrayValues.get(), arrayValues.get(), arraySize * sizeof(Value));
+		operator delete[](arrayValues.release());
+		//std::uninitialized_copy_n(arrayValues.get(), arraySize, newArrayValues.get());
+		std::uninitialized_fill_n(newArrayValues.get() + arraySize, newArraySize - arraySize, EMPTY_VALUE);
+
+		std::swap(arrayValues, newArrayValues);
+		std::swap(arraySize, newArraySize);
+	}
+
+	template<bool RELOC_ARRAY> void RelocateHashInPlace(Size newArraySize) {
+		ARRAYHASH_LOG("Clean hash (%d) and relocate array (%d -> %d)\n", hashSize, arraySize, newArraySize);
+
+		//relocate array if required
+		if (RELOC_ARRAY)
+			RelocateArrayPart(newArraySize);
+
 		if (hashSize == 0)
 			return;
-		ARRAYHASH_LOG("Clean hash (%d)\n", hashSize);
+		Size totalCount = arrayCount + hashCount;
+		
 		//find first empty cell
 		Size firstEmpty = 0;
 		while (hashKeys[firstEmpty] != EMPTY_KEY)
 			firstEmpty++;
+
 		//do a full round from it
 		Size pos = firstEmpty;
 		do {
@@ -176,19 +196,27 @@ class ArrayHash {
 			hashKeys[pos] = EMPTY_KEY;
 
 			if (key != EMPTY_KEY && key != REMOVED_KEY) {
-				//insert key as usual
-				Size cell = FindCellEmpty(key);
-				hashKeys[cell] = key;
-				//move value if necessary
-				if (cell != pos) {
-					hashValues[cell] = hashValues[pos];
-					SetEmpty(hashValues[pos]);
+				const Value &value = hashValues[pos];
+				if (RELOC_ARRAY && InArray(key)) {
+					arrayValues[key] = value;
+					arrayCount++;
+				}
+				else {
+					//insert key as usual
+					Size cell = FindCellEmpty(key);
+					hashKeys[cell] = key;
+					//move value if necessary
+					if (cell != pos)
+						hashValues[cell] = value;
 				}
 			}
 
 			pos = (pos + 1) & (hashSize - 1);
 		} while (pos != firstEmpty);
 
+		//update hash count
+		if (RELOC_ARRAY)
+			hashCount = totalCount - arrayCount;
 		//forget about removed entries
 		hashFill = hashCount;
 	}
@@ -197,17 +225,8 @@ class ArrayHash {
 		ARRAYHASH_LOG("Relocate array (%d -> %d) and hash (%d -> %d)\n", arraySize, newArraySize, hashSize, newHashSize);
 
 		//relocate array if required
-		if (RELOC_ARRAY) {
-			std::unique_ptr<Value[]> newArrayValues(AllocateBuffer<Value, false>(newArraySize));
-			//Note: trivial relocation
-			memcpy(newArrayValues.get(), arrayValues.get(), arraySize * sizeof(Value));
-			operator delete[](arrayValues.release());
-			//std::uninitialized_copy_n(arrayValues.get(), arraySize, newArrayValues.get());
-			std::uninitialized_fill_n(newArrayValues.get() + arraySize, newArraySize - arraySize, EMPTY_VALUE);
-
-			std::swap(arrayValues, newArrayValues);
-			std::swap(arraySize, newArraySize);
-		}
+		if (RELOC_ARRAY)
+			RelocateArrayPart(newArraySize);
 
 		//create new hash table and swap with it
 		std::unique_ptr<Key[]> newHashKeys(AllocateBuffer<Key, false>(newHashSize));
@@ -247,12 +266,18 @@ class ArrayHash {
 	void Reallocate(Size newArraySize, Size newHashSize) {
 		assert(newArraySize >= arraySize && newHashSize >= hashSize);
 
-		if (newArraySize == arraySize && newHashSize == hashSize)
-			RelocateHashInPlace();
-		else if (newArraySize == arraySize)
-			RelocateHashToNew<false>(newHashSize, newArraySize);
-		else
-			RelocateHashToNew<true>(newHashSize, newArraySize);
+		if (newHashSize == hashSize) {
+			if (newArraySize == arraySize)
+				RelocateHashInPlace<false>(newArraySize);
+			else
+				RelocateHashInPlace<true>(newArraySize);
+		}
+		else {
+			if (newArraySize == arraySize)
+				RelocateHashToNew<false>(newHashSize, newArraySize);
+			else
+				RelocateHashToNew<true>(newHashSize, newArraySize);
+		}
 	}
 
 
