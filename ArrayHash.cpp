@@ -460,7 +460,7 @@ public:
 		}
 	}
 
-
+	//force to allocate memory for at least given amount of elements (separately for array and hash parts)
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 		if (arraySizeLB || arraySize)
 			arraySizeLB = std::max(Size(1) << log2up(arraySizeLB), std::max(arraySize, (Size)ARRAY_MIN_SIZE));
@@ -469,6 +469,21 @@ public:
 		if (arraySizeLB == arraySize && hashSizeLB == hashSize && !alwaysCleanHash)
 			return;
 		Reallocate(arraySizeLB, hashSizeLB);
+	}
+
+	//perform given action for all the elements
+	//callback is specified in format:
+	//  bool action(Key key, Value &value);
+	//it must return false to continue iteration, true to stop
+	template<class Action> void ForEach(Action action) const {
+		for (Size i = 0; i < arraySize; i++)
+			if (!IsEmpty(arrayValues[i]))
+				if (action(Key(i), arrayValues[i]))
+					return;
+		for (Size i = 0; i < hashSize; i++)
+			if (hashKeys[i] != EMPTY_KEY && hashKeys[i] != REMOVED_KEY)
+				if (action(Key(hashKeys[i]), hashValues[i]))
+					return;
 	}
 
 	bool AssertCorrectness(int verbosity = 2) const {
