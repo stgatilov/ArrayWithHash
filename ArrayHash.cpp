@@ -848,6 +848,17 @@ void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operatio
 			int flag = std::uniform_int_distribution<int>(0, 1)(rnd);
 			dict.Reserve(arrSz, hashSz, flag == 0);
 		}
+		else if (type == 8) {
+			TestContainer tmp;
+			tmp.Set(42, 8);
+			dict.Swap(tmp);
+		}
+		else if (type == 9) {
+			dict.Clear();
+		}
+		else if (type == 10) {
+			dict.CalcCheckSum();
+		}
 
 		doneOps++;
 	}
@@ -884,6 +895,14 @@ void TestsRound(std::mt19937 &rnd) {
 	{
 		TestContainer dict;
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
+	}
+	{
+		TestContainer dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
+	}
+	{
+		TestContainer dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
 	}
 }
 
