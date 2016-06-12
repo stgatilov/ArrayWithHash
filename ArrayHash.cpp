@@ -659,9 +659,9 @@ class TestContainer {
 public:
 	int assertLevel;
 	bool printCommands;
-	TestContainer() {
+	TestContainer(int lvl = 2) {
 		//change in order to trade speed for internal checks verbosity
-		assertLevel = 2;
+		assertLevel = lvl;
 		//chenge to true if you want to see a problematic test
 		printCommands = false;
 	}
@@ -782,6 +782,7 @@ inline double my_clock() {
 	return timer_current() * (1000.0 / double(timer_ticks_per_second()));
 }
 
+bool quietTests = false;
 void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
 	double allSum = std::accumulate(typeProbs.begin(), typeProbs.end(), 0.0);
 	std::string signature = "|";
@@ -797,9 +798,11 @@ void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operatio
 		signature += buff + std::string("|");
 	}
 
-	printf("TestRandom: %d opers, keys in [%d, %d]\n", operationsCount, minKey, maxKey);
-	printf("     probs: %s\n", signature.c_str());
-	fflush(stdout);
+	if (!quietTests) {
+		printf("TestRandom: %d opers, keys in [%d, %d]\n", operationsCount, minKey, maxKey);
+		printf("     probs: %s\n", signature.c_str());
+		fflush(stdout);
+	}
 
 	double sum = 0.0;
 	std::vector<double> prefSums(1, 0.0);
@@ -863,44 +866,44 @@ void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operatio
 	}
 }
 
-void TestsRound(std::mt19937 &rnd) {
+void TestsRound(std::mt19937 &rnd, int level) {
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, 0, 100, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1}, 1000, -50, 50, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 50, 50, 1, 1, 1, 1, 1}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, -100, 100, rnd);
 		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, -120, 120, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 0, 100, rnd);
 		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 100, 300, rnd);
 		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, 0, 500, rnd);
 	}
 	{
-		TestContainer dict;
+		TestContainer dict(level);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
 	}
 }
@@ -1210,16 +1213,30 @@ void SpeedAll() {
 #undef TIME_CALL
 }
 
-int main() {
-	SpeedAll();
+int main(int argc, char **argv) {
+	if (argc < 2) {
+		fprintf(stderr, "Specify one of parameters: -s (speed), -t2 (tests)\n");
+		return 666;
+	}
 
-	std::mt19937 rnd;
-	while (1) TestsRound(rnd);
+	for (int i = 1; i < argc; i++) {
+		if (strcmp(argv[i], "-q") == 0)
+			quietTests = true;
+		if (strcmp(argv[i], "-s") == 0)
+			SpeedAll();
+		if (strncmp(argv[i], "-t", 2) == 0) {
+			int lvl;
+			if (sscanf(argv[i], "-t%d", &lvl) != 1)
+				lvl = 2;
+			std::mt19937 rnd;
+			while (1) TestsRound(rnd, lvl);
+		}
+	}
 
-	while (1) {
+/*	while (1) {
 		double q = Speed_GrowthHashRandom<ArrayHash>(100000, 100);
 		std::cout << q;
-	}
+	}*/
 
 	return 0;
 }
