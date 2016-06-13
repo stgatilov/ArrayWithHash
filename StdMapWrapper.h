@@ -2,6 +2,7 @@
 
 #include <map>
 #include <unordered_map>
+#include <algorithm>
 
 //wrapper aroung std::unordered_map (or std::map) with interface of ArrayHash
 class StdMapWrapper {
