@@ -1,2 +1,2 @@
-g++ ArrayHash.cpp CorrectnessTests.cpp PerformanceTests.cpp timer.c -O2 -std=c++11 -D NDEBUG -o ArrayHash_mingw.exe
-g++ ArrayHash.cpp -S -O2 -std=c++11 -D NDEBUG
+g++ TestsMain.cpp CorrectnessTests.cpp PerformanceTests.cpp timer.c -O2 -std=c++11 -D NDEBUG -o TestsMain_mingw.exe
+g++ PerformanceTests.cpp -S -O2 -std=c++11 -D NDEBUG
