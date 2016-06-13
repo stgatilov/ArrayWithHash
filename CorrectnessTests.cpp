@@ -1,5 +1,4 @@
 #include "CorrectnessTests.h"
-#include "ArrayHash.h"
 #include "TestContainer.h"
 
 #include <vector>
