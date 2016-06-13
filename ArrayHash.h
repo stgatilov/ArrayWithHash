@@ -577,7 +577,7 @@ public:
 };
 
 namespace std {
-	void swap(ArrayHash &a, ArrayHash &b) {
+	inline void swap(ArrayHash &a, ArrayHash &b) {
 		a.Swap(b);
 	}
 };
