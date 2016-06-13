@@ -4,7 +4,8 @@
 #include <unordered_map>
 #include <algorithm>
 
-//wrapper aroung std::unordered_map (or std::map) with interface of ArrayHash
+//Wrapper aroung std::unordered_map (or std::map) with interface of ArrayHash.
+//Used mainly for comparison of ArrayHash with STL containers.
 class StdMapWrapper {
 //	typedef std::map<Key, Value> Map;
 	typedef std::unordered_map<Key, Value> Map;
