@@ -1,18 +1,39 @@
 #include "PerformanceTests.h"
 #include "ArrayHash.h"
 #include "StdMapWrapper.h"
+#include <vector>
+#include <string>
+
+template<class T> static std::string to_string(T val, const char *format) {
+	char buff[256];
+	sprintf(buff, format, val);
+	return buff;
+}
 
 void SpeedAll(bool compareToStl) {
+	std::vector<std::vector<std::string>> table;
+
 #define TIME_CALL(func, params, paramsFast) { \
+	std::vector<std::string> row; \
 	if (compareToStl) { \
 		double timeMine = Speed_##func<ArrayHash>params; \
 		double timeStl = Speed_##func<StdMapWrapper>params; \
-		printf("%s %s: %0.2lf mine, %0.2lf stl, %0.2lf speedup\n", #func, #params, timeMine, timeStl, timeStl / timeMine); \
+		row.push_back(#func); \
+		row.push_back(#params); \
+		row.push_back(to_string(timeMine, "mine: %7.2lf")); \
+		row.push_back(to_string(timeStl , "stl: %7.2lf")); \
+		row.push_back(to_string(timeStl / timeMine, "speedup: %5.2lf")); \
 	} \
 	else { \
 		double timeMine = Speed_##func<ArrayHash>paramsFast; \
-		printf("%s %s: %0.2lf mine\n", #func, #paramsFast, timeMine); \
+		row.push_back(#func); \
+		row.push_back(#paramsFast); \
+		row.push_back(to_string(timeMine, "mine: %7.2lf")); \
 	} \
+	for (size_t i = 0; i < row.size(); i++) \
+		fprintf(stderr, "%s ", row[i].c_str()); \
+	fprintf(stderr, "\n"); \
+	table.push_back(row); \
 }
 
 	TIME_CALL(GetArrayRandomHit      , (100000, 100), (100000, 1000));
@@ -34,5 +55,19 @@ void SpeedAll(bool compareToStl) {
 	TIME_CALL(SetArrayRandomMix      , (100000, 100), (100000, 1000));
 	TIME_CALL(SetIfNewArrayRandomMix , (100000, 100), (100000, 1000));
 
-#undef TIME_CALL
+	//print a well-aligned table to stdout
+	std::vector<size_t> width(table[0].size(), 0);
+	for (size_t i = 0; i < table.size(); i++)
+		for (size_t j = 0; j < table[i].size(); j++)
+			width[j] = std::max(width[j], table[i][j].size());
+	for (size_t i = 0; i < table.size(); i++) {
+		for (size_t j = 0; j < table[i].size(); j++) {
+			if (j) printf(" | ");
+			const auto &cell = table[i][j];
+			printf("%s", cell.c_str());
+			for (size_t k = 0; k < width[j] - cell.size(); k++)
+				printf(" ");
+		}
+		printf("\n");
+	}
 }
