@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <random>
 
-void SpeedAll();
+void SpeedAll(bool compareToStl);
 
 
 #include "timer.h"

@@ -17,7 +17,9 @@ int main(int argc, char **argv) {
 		if (strcmp(argv[i], "-q") == 0)
 			quietTests = true;
 		if (strcmp(argv[i], "-s") == 0)
-			SpeedAll();
+			SpeedAll(false);
+		if (strcmp(argv[i], "-sc") == 0)
+			SpeedAll(true);
 		if (strncmp(argv[i], "-t", 2) == 0) {
 			int lvl;
 			if (sscanf(argv[i], "-t%d", &lvl) != 1)
