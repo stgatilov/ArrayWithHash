@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <algorithm>
 #include <cassert>
-#include <memory>
 #include <set>
 #include <limits>
 
@@ -30,6 +29,7 @@ static const Key REMOVED_KEY = std::numeric_limits<Key>::max() - 1;
 
 static const Value EMPTY_VALUE = std::numeric_limits<Value>::max();
 inline bool IsEmpty(const Value &value) { return value == EMPTY_VALUE; }
+//inline void ConstructEmpty(Value *value) { value = EMPTY_VALUE; }
 inline void SetEmpty(Value &value) { value = EMPTY_VALUE; }
 
 inline Size HashFunction(Key key) {
@@ -101,24 +101,24 @@ inline Size IsHashFull(Size cfill, Size sz) {
 class ArrayHash {
 	Size arrayCount, arraySize;
 	Size hashSize, hashCount, hashFill;
-	std::unique_ptr<Value[]> arrayValues, hashValues;
-	std::unique_ptr<Key[]> hashKeys;
+	Value *arrayValues, *hashValues;
+	Key *hashKeys;
 
 
-	template<class Elem, bool Init = true> static Elem* AllocateBuffer(Size elemCount) {
-		if (elemCount <= 0)
+	template<class Elem> static Elem* AllocateBuffer(Size elemCount) {
+		if (elemCount == 0)
 			return nullptr;
-		if (Init)
-			return new Elem[elemCount];
-		else
-			return (Elem*) operator new[] (elemCount * sizeof(Elem));
+		return (Elem*) operator new (elemCount * sizeof(Elem));
+	}
+	template<class Elem> static void DeallocateBuffer(Elem *buffer) {
+		operator delete (buffer);
 	}
 
 	inline bool InArray(Key key) const {
 		return Size(key) < arraySize;
 	}
 	inline bool InArray(Value *ptr) const {
-		size_t offset = (char*)ptr - (char*)arrayValues.get();
+		size_t offset = (char*)ptr - (char*)arrayValues;
 		return offset < arraySize * sizeof(Value);
 	}
 
@@ -185,12 +185,12 @@ class ArrayHash {
 	}
 
 	void RelocateArrayPart(Size &newArraySize) {
-		std::unique_ptr<Value[]> newArrayValues(AllocateBuffer<Value, false>(newArraySize));
+		Value *newArrayValues = AllocateBuffer<Value>(newArraySize);
 		//Note: trivial relocation
-		memcpy(newArrayValues.get(), arrayValues.get(), arraySize * sizeof(Value));
-		operator delete[](arrayValues.release());
-		//std::uninitialized_copy_n(arrayValues.get(), arraySize, newArrayValues.get());
-		std::uninitialized_fill_n(newArrayValues.get() + arraySize, newArraySize - arraySize, EMPTY_VALUE);
+		memcpy(newArrayValues, arrayValues, arraySize * sizeof(Value));
+		DeallocateBuffer<Value>(arrayValues);
+		//some alternative?...
+		std::uninitialized_fill_n(newArrayValues + arraySize, newArraySize - arraySize, EMPTY_VALUE);
 
 		std::swap(arrayValues, newArrayValues);
 		std::swap(arraySize, newArraySize);
@@ -248,9 +248,11 @@ class ArrayHash {
 			RelocateArrayPart(newArraySize);
 
 		//create new hash table and swap with it
-		std::unique_ptr<Key[]> newHashKeys(AllocateBuffer<Key, false>(newHashSize));
-		std::uninitialized_fill_n(newHashKeys.get(), newHashSize, EMPTY_KEY);
-		std::unique_ptr<Value[]> newHashValues(AllocateBuffer<Value>(newHashSize));
+		Key *newHashKeys(AllocateBuffer<Key>(newHashSize));
+		std::uninitialized_fill_n(newHashKeys, newHashSize, EMPTY_KEY);
+		Value *newHashValues(AllocateBuffer<Value>(newHashSize));
+		for (Size i = 0; i < newHashSize; i++)
+			new(newHashValues + i) Value;
 
 		std::swap(hashKeys, newHashKeys);
 		std::swap(hashValues, newHashValues);
@@ -359,10 +361,53 @@ class ArrayHash {
 		hashCount--;
 	}
 
+	inline void Flush() {
+		arraySize = 0;
+		hashSize = 0;
+		arrayCount = 0;
+		hashCount = 0;
+		hashFill = 0;
+		arrayValues = 0;
+		hashValues = 0;
+		hashKeys = 0;
+	}
+	inline void RelocateFrom(const ArrayHash &iSource) {
+		arraySize = iSource.arraySize;
+		hashSize = iSource.hashSize;
+		arrayCount = iSource.arrayCount;
+		hashCount = iSource.hashCount;
+		hashFill = iSource.hashFill;
+		arrayValues = iSource.arrayValues;
+		hashValues = iSource.hashValues;
+		hashKeys = iSource.hashKeys;
+	}
+
+	//non-copyable
+	ArrayHash (const ArrayHash &iSource);
+	void operator= (const ArrayHash &iSource);
 
 public:
+	ArrayHash() {
+		Flush();
+	}
+	~ArrayHash() {
+		for (Size i = 0; i < arraySize; i++)
+			arrayValues[i].~Value();
+		for (Size i = 0; i < hashSize; i++)
+			hashValues[i].~Value();
+		DeallocateBuffer<Value>(arrayValues);
+		DeallocateBuffer<Value>(hashValues);
+		DeallocateBuffer<Key>(hashKeys);
+	}
 
-	ArrayHash() : arraySize(0), hashSize(0), arrayCount(0), hashCount(0), hashFill(0) {}
+	ArrayHash(ArrayHash &&iSource) {
+		RelocateFrom(iSource);
+		iSource.Flush();
+	}
+	void operator= (ArrayHash &&iSource) {
+		RelocateFrom(iSource);
+		iSource.Flush();
+	}
 
 	void Swap(ArrayHash &other) {
 		std::swap(arraySize, other.arraySize);
@@ -378,9 +423,9 @@ public:
 	//remove all elements without shrinking
 	void Clear() {
 		if (arraySize && arrayCount)
-			std::fill_n(arrayValues.get(), arraySize, EMPTY_VALUE);
+			std::fill_n(arrayValues, arraySize, EMPTY_VALUE);
 		if (hashSize && hashFill)
-			std::fill_n(hashKeys.get(), hashSize, EMPTY_KEY);
+			std::fill_n(hashKeys, hashSize, EMPTY_KEY);
 		arrayCount = hashCount = hashFill = 0;
 	}
 
@@ -480,9 +525,9 @@ public:
 	inline Key KeyOf(Value *ptr) const {
 		assert(ptr);
 		if (InArray(ptr))
-			return Key(ptr - arrayValues.get());
+			return Key(ptr - arrayValues);
 		else {
-			Size cell = ptr - hashValues.get();
+			Size cell = ptr - hashValues;
 			return hashKeys[cell];
 		}
 	}
@@ -521,10 +566,10 @@ public:
 			ASSERT_ALWAYS((arraySize & (arraySize - 1)) == 0);
 			ASSERT_ALWAYS(( hashSize & ( hashSize - 1)) == 0);
 			//check buffers
-			ASSERT_ALWAYS(follows(arraySize == 0, !arrayValues.get()));
-			ASSERT_ALWAYS(follows(arraySize != 0,  arrayValues.get()));
-			ASSERT_ALWAYS(follows( hashSize == 0,  !hashValues.get() && !hashKeys.get()));
-			ASSERT_ALWAYS(follows( hashSize != 0,   hashValues.get() &&  hashKeys.get()));
+			ASSERT_ALWAYS(follows(arraySize == 0, !arrayValues));
+			ASSERT_ALWAYS(follows(arraySize != 0,  arrayValues));
+			ASSERT_ALWAYS(follows( hashSize == 0,  !hashValues && !hashKeys));
+			ASSERT_ALWAYS(follows( hashSize != 0,   hashValues &&  hashKeys));
 			//check hash fill ratio
 			ASSERT_ALWAYS(hashFill <= HASH_MAX_FILL * hashSize);
 		}
