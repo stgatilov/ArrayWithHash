@@ -29,7 +29,7 @@ static const Key EMPTY_KEY = std::numeric_limits<Key>::max();
 static const Key REMOVED_KEY = std::numeric_limits<Key>::max() - 1;
 
 static const Value EMPTY_VALUE = std::numeric_limits<Value>::max();
-inline bool IsEmpty(Value value) { return value == EMPTY_VALUE; }
+inline bool IsEmpty(const Value &value) { return value == EMPTY_VALUE; }
 inline void SetEmpty(Value &value) { value = EMPTY_VALUE; }
 
 inline Size HashFunction(Key key) {
