@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <algorithm>
 #include <cassert>
@@ -115,7 +116,7 @@ class ArrayHash {
 
 	template<class Elem> static Elem* AllocateBuffer(Size elemCount) {
 		if (elemCount == 0)
-			return nullptr;
+			return NULL;
 		return (Elem*) operator new (elemCount * sizeof(Elem));
 	}
 	template<class Elem> static void DeallocateBuffer(Elem *buffer) {
@@ -341,9 +342,9 @@ class ArrayHash {
 
 	Value *HashGetPtr(Key key) const {
 		if (hashSize == 0)
-			return nullptr;
+			return NULL;
 		Size cell = FindCellKeyOrEmpty(key);
-		return hashKeys[cell] == EMPTY_KEY ? nullptr : &hashValues[cell];
+		return hashKeys[cell] == EMPTY_KEY ? NULL : &hashValues[cell];
 	}
 
 	Value *HashSet(Key key, Value value) {
@@ -371,7 +372,7 @@ class ArrayHash {
 		hashCount++;
 		hashKeys[cell] = key;
 		new (&hashValues[cell]) Value(AH_MOVE(value));
-		return nullptr;
+		return NULL;
 	}
 
 	void HashRemove(Key key) {
@@ -399,9 +400,9 @@ class ArrayHash {
 		arrayCount = 0;
 		hashCount = 0;
 		hashFill = 0;
-		arrayValues = 0;
-		hashValues = 0;
-		hashKeys = 0;
+		arrayValues = NULL;
+		hashValues = NULL;
+		hashKeys = NULL;
 	}
 	inline void RelocateFrom(const ArrayHash &iSource) {
 		arraySize = iSource.arraySize;
@@ -489,7 +490,7 @@ public:
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
-			return IsEmpty(val) ? nullptr : &val;	//branchless
+			return IsEmpty(val) ? NULL : &val;	//branchless
 		}
 		else
 			return HashGetPtr(key);
@@ -521,7 +522,7 @@ public:
 			if (IsEmpty(oldVal)) {					//real branch
 				oldVal = AH_MOVE(value);
 				arrayCount++;
-				return nullptr;
+				return NULL;
 			}
 			else
 				return &oldVal;
@@ -531,7 +532,7 @@ public:
 			stored = (empty ? value : stored);
 			arrayCount += empty;
 			*pOldVal = stored;
-			return empty ? nullptr : pOldVal;*/
+			return empty ? NULL : pOldVal;*/
 		}
 		else
 			return HashSetIfNew(key, AH_MOVE(value));
