@@ -41,7 +41,7 @@ static const double HASH_MAX_FILL = 0.75;
 static const size_t ARRAY_MIN_SIZE = 8;
 static const size_t HASH_MIN_SIZE = 8;
 
-inline Size IsHashFull(Size cfill, Size sz) {
+static inline Size IsHashFull(Size cfill, Size sz) {
 	return cfill >= ((sz >> 2) * 3);
 }
 
