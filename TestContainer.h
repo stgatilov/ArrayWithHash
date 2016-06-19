@@ -34,14 +34,14 @@ public:
 		if (printCommands) std::cout << "GetSize" << std::endl;
 		Size a = obj.GetSize();
 		Size b = check.GetSize();
-		ASSERT_ALWAYS(a == b);
+		AWH_ASSERT_ALWAYS(a == b);
 		return a;
 	}
 	Value Get(Key key) const {
 		if (printCommands) std::cout << "Get " << key << std::endl;
 		Value a = obj.Get(key);
 		Value b = check.Get(key);
-		ASSERT_ALWAYS(Same(a, b));
+		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -49,7 +49,7 @@ public:
 		if (printCommands) std::cout << "GetPtr " << key << std::endl;
 		Value *a = obj.GetPtr(key);
 		StdMapWrapper::Ptr b = check.GetPtr(key);
-		ASSERT_ALWAYS(Same(a, b));
+		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -57,7 +57,7 @@ public:
 		if (printCommands) std::cout << "Set " << key << " " << value << std::endl;
 		Value *a = obj.Set(key, value);
 		StdMapWrapper::Ptr b = check.Set(key, value);
-		ASSERT_ALWAYS(Same(a, b));
+		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -65,7 +65,7 @@ public:
 		if (printCommands) std::cout << "SetIfNew " << key << " " << value << std::endl;
 		Value *a = obj.SetIfNew(key, value);
 		StdMapWrapper::Ptr b = check.SetIfNew(key, value);
-		ASSERT_ALWAYS(Same(a, b));
+		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
@@ -86,7 +86,7 @@ public:
 		if (printCommands) std::cout << "KeyOf " << ptr << std::endl;
 		Key a = obj.KeyOf(ptr);
 		Key b = check.KeyOf(check.GetPtr(a));
-		ASSERT_ALWAYS(a == b);
+		AWH_ASSERT_ALWAYS(a == b);
 	}
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 		if (printCommands) std::cout << "Reserve " << arraySizeLB << " " << hashSizeLB << " " << alwaysCleanHash << std::endl;
@@ -119,7 +119,7 @@ public:
 		sum = 0;
 		check.ForEach(Add);
 		Key b = sum;
-		ASSERT_ALWAYS(a == b);
+		AWH_ASSERT_ALWAYS(a == b);
 		return a;
 	}
 

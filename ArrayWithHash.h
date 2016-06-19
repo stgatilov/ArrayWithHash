@@ -14,7 +14,7 @@
 //   zero-byte empty? NO
 // shrinking? NO
 
-#define ASSERT_ALWAYS(expr) { \
+#define AWH_ASSERT_ALWAYS(expr) { \
 	if (!(expr)) { \
 		fprintf(stderr, "Assertion failed: %s in %s:%s\n", #expr, __FILE__, __LINE__); \
 		assert(#expr != 0); \
@@ -34,10 +34,10 @@ inline bool IsEmpty(const Value &value) { return value == EMPTY_VALUE; }
 inline Value GetEmpty() { return EMPTY_VALUE; }
 
 static const bool RELOCATE_WITH_MEMCPY = true;
-#ifndef AH_NO_CPP11
-	#define AH_MOVE(x) std::move(x)
+#ifndef AWH_NO_CPP11
+	#define AWH_MOVE(x) std::move(x)
 #else
-	#define AH_MOVE(x) (x)
+	#define AWH_MOVE(x) (x)
 #endif
 
 
@@ -127,7 +127,7 @@ class ArrayWithHash {
 		if (RELOCATE_WITH_MEMCPY)
 			memcpy(&dst, &src, sizeof(Value));
 		else {
-			dst = AH_MOVE(src);
+			dst = AWH_MOVE(src);
 			src.~Value();
 		}
 	}
@@ -136,7 +136,7 @@ class ArrayWithHash {
 			memcpy(dst, src, cnt * sizeof(Value));
 		else {
 			for (Size i = 0; i < cnt; i++) {
-				dst[i] = AH_MOVE(src[i]);
+				dst[i] = AWH_MOVE(src[i]);
 				src[i].~Value();
 			}
 		}
@@ -350,20 +350,20 @@ class ArrayWithHash {
 	Value *HashSet(Key key, Value value) {
 		if (IsHashFull(hashFill, hashSize)) {
 			AdaptSizes(key);
-			return Set(key, AH_MOVE(value));
+			return Set(key, AWH_MOVE(value));
 		}
 		Size cell = FindCellKeyOrEmpty(key);
 		hashFill += (hashKeys[cell] == EMPTY_KEY);
 		hashCount += (hashKeys[cell] == EMPTY_KEY);
 		hashKeys[cell] = key;
-		new (&hashValues[cell]) Value(AH_MOVE(value));
+		new (&hashValues[cell]) Value(AWH_MOVE(value));
 		return &hashValues[cell];
 	}
 
 	Value *HashSetIfNew(Key key, Value value) {
 		if (IsHashFull(hashFill, hashSize)) {
 			AdaptSizes(key);
-			return SetIfNew(key, AH_MOVE(value));
+			return SetIfNew(key, AWH_MOVE(value));
 		}
 		Size cell = FindCellKeyOrEmpty(key);
 		if (hashKeys[cell] != EMPTY_KEY)
@@ -371,7 +371,7 @@ class ArrayWithHash {
 		hashFill++;
 		hashCount++;
 		hashKeys[cell] = key;
-		new (&hashValues[cell]) Value(AH_MOVE(value));
+		new (&hashValues[cell]) Value(AWH_MOVE(value));
 		return NULL;
 	}
 
@@ -505,11 +505,11 @@ public:
 		if (InArray(key)) {
 			Value &oldVal = arrayValues[key];
 			arrayCount += IsEmpty(oldVal);	//branchless
-			oldVal = AH_MOVE(value);
+			oldVal = AWH_MOVE(value);
 			return &oldVal;
 		}
 		else
-			return HashSet(key, AH_MOVE(value));
+			return HashSet(key, AWH_MOVE(value));
 	}
 
 	//if key is present, then returns pointer to it
@@ -520,7 +520,7 @@ public:
 		if (InArray(key)) {
 			Value &oldVal = arrayValues[key];
 			if (IsEmpty(oldVal)) {					//real branch
-				oldVal = AH_MOVE(value);
+				oldVal = AWH_MOVE(value);
 				arrayCount++;
 				return NULL;
 			}
@@ -535,7 +535,7 @@ public:
 			return empty ? NULL : pOldVal;*/
 		}
 		else
-			return HashSetIfNew(key, AH_MOVE(value));
+			return HashSetIfNew(key, AWH_MOVE(value));
 	}
 
 	//removes given key (if present)
@@ -602,17 +602,17 @@ public:
 	bool AssertCorrectness(int verbosity = 2) const {
 		if (verbosity >= 0) {
 			//check array/hash sizes
-			ASSERT_ALWAYS(arraySize == 0 || arraySize >= ARRAY_MIN_SIZE);
-			ASSERT_ALWAYS( hashSize == 0 ||  hashSize >=  HASH_MIN_SIZE);
-			ASSERT_ALWAYS((arraySize & (arraySize - 1)) == 0);
-			ASSERT_ALWAYS(( hashSize & ( hashSize - 1)) == 0);
+			AWH_ASSERT_ALWAYS(arraySize == 0 || arraySize >= ARRAY_MIN_SIZE);
+			AWH_ASSERT_ALWAYS( hashSize == 0 ||  hashSize >=  HASH_MIN_SIZE);
+			AWH_ASSERT_ALWAYS((arraySize & (arraySize - 1)) == 0);
+			AWH_ASSERT_ALWAYS(( hashSize & ( hashSize - 1)) == 0);
 			//check buffers
-			ASSERT_ALWAYS(follows(arraySize == 0, !arrayValues));
-			ASSERT_ALWAYS(follows(arraySize != 0,  arrayValues));
-			ASSERT_ALWAYS(follows( hashSize == 0,  !hashValues && !hashKeys));
-			ASSERT_ALWAYS(follows( hashSize != 0,   hashValues &&  hashKeys));
+			AWH_ASSERT_ALWAYS(follows(arraySize == 0, !arrayValues));
+			AWH_ASSERT_ALWAYS(follows(arraySize != 0,  arrayValues));
+			AWH_ASSERT_ALWAYS(follows( hashSize == 0,  !hashValues && !hashKeys));
+			AWH_ASSERT_ALWAYS(follows( hashSize != 0,   hashValues &&  hashKeys));
 			//check hash fill ratio
-			ASSERT_ALWAYS(hashFill <= HASH_MAX_FILL * hashSize);
+			AWH_ASSERT_ALWAYS(hashFill <= HASH_MAX_FILL * hashSize);
 		}
 		if (verbosity >= 1) {
 			//iterate over array
@@ -622,21 +622,21 @@ public:
 					continue;
 				trueArrayCount++;
 			}
-			ASSERT_ALWAYS(arrayCount == trueArrayCount);
+			AWH_ASSERT_ALWAYS(arrayCount == trueArrayCount);
 			//iterate over hash table
 			Size trueHashCount = 0, trueHashFill = 0;
 			for (Size i = 0; i < hashSize; i++) {
 				Key key = hashKeys[i];
-				ASSERT_ALWAYS(Size(key) >= arraySize);
+				AWH_ASSERT_ALWAYS(Size(key) >= arraySize);
 				if (key != EMPTY_KEY)
 					trueHashFill++;
 				if (key != EMPTY_KEY && key != REMOVED_KEY) {
 					trueHashCount++;
 					const Value &value = hashValues[i];
-					ASSERT_ALWAYS(!IsEmpty(value));	//must be alive
+					AWH_ASSERT_ALWAYS(!IsEmpty(value));	//must be alive
 				} //hashValues[i] must be dead otherwise
 			}
-			ASSERT_ALWAYS(hashCount == trueHashCount && hashFill == trueHashFill);
+			AWH_ASSERT_ALWAYS(hashCount == trueHashCount && hashFill == trueHashFill);
 		}
 		if (verbosity >= 2) {
 			//hash verbose check: keys are unique
@@ -645,7 +645,7 @@ public:
 				Key key = hashKeys[i];
 				if (key == EMPTY_KEY || key == REMOVED_KEY)
 					continue;
-				ASSERT_ALWAYS(keys.count(key) == 0);
+				AWH_ASSERT_ALWAYS(keys.count(key) == 0);
 				keys.insert(key);
 			}
 			//hash verbose check: key placed near hash function value
@@ -654,7 +654,7 @@ public:
 				if (key == EMPTY_KEY || key == REMOVED_KEY)
 					continue;
 				Size cell = FindCellKeyOrEmpty(key);
-				ASSERT_ALWAYS(hashKeys[cell] == key);
+				AWH_ASSERT_ALWAYS(hashKeys[cell] == key);
 			}
 		}
 		return true;
