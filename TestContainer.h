@@ -1,14 +1,14 @@
 #pragma once
 
 #include <iostream>
-#include "ArrayHash.h"
+#include "ArrayWithHash.h"
 #include "StdMapWrapper.h"
 
 //Testing wrapper around both ArrayHash and StdMapWrapper.
 //It checks that all the outputs of all method calls are the same.
 //Used only for testing purposes
 class TestContainer {
-	ArrayHash obj;
+	ArrayWithHash obj;
 	StdMapWrapper check;
 
 	static inline bool Same(Value a, Value b) {

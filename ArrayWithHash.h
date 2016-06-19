@@ -107,7 +107,7 @@ inline Size IsHashFull(Size cfill, Size sz) {
 };
 
 
-class ArrayHash {
+class ArrayWithHash {
 	Size arrayCount, arraySize;
 	Size hashSize, hashCount, hashFill;
 	Value *arrayValues, *hashValues;
@@ -404,7 +404,7 @@ class ArrayHash {
 		hashValues = NULL;
 		hashKeys = NULL;
 	}
-	inline void RelocateFrom(const ArrayHash &iSource) {
+	inline void RelocateFrom(const ArrayWithHash &iSource) {
 		arraySize = iSource.arraySize;
 		hashSize = iSource.hashSize;
 		arrayCount = iSource.arrayCount;
@@ -421,14 +421,14 @@ class ArrayHash {
 	}
 
 	//non-copyable
-	ArrayHash (const ArrayHash &iSource);
-	void operator= (const ArrayHash &iSource);
+	ArrayWithHash (const ArrayWithHash &iSource);
+	void operator= (const ArrayWithHash &iSource);
 
 public:
-	ArrayHash() {
+	ArrayWithHash() {
 		Flush();
 	}
-	~ArrayHash() {
+	~ArrayWithHash() {
 		for (Size i = 0; i < arraySize; i++)
 			arrayValues[i].~Value();
 		DestroyAllHashValues();
@@ -437,16 +437,16 @@ public:
 		DeallocateBuffer<Key>(hashKeys);
 	}
 
-	ArrayHash(ArrayHash &&iSource) {
+	ArrayWithHash(ArrayWithHash &&iSource) {
 		RelocateFrom(iSource);
 		iSource.Flush();
 	}
-	void operator= (ArrayHash &&iSource) {
+	void operator= (ArrayWithHash &&iSource) {
 		RelocateFrom(iSource);
 		iSource.Flush();
 	}
 
-	void Swap(ArrayHash &other) {
+	void Swap(ArrayWithHash &other) {
 		std::swap(arraySize, other.arraySize);
 		std::swap(arrayCount, other.arrayCount);
 		std::swap(hashSize, other.hashSize);
@@ -663,7 +663,7 @@ public:
 };
 
 namespace std {
-	inline void swap(ArrayHash &a, ArrayHash &b) {
+	inline void swap(ArrayWithHash &a, ArrayWithHash &b) {
 		a.Swap(b);
 	}
 };

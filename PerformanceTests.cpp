@@ -1,5 +1,5 @@
 #include "PerformanceTests.h"
-#include "ArrayHash.h"
+#include "ArrayWithHash.h"
 #include "StdMapWrapper.h"
 #include <vector>
 #include <string>
@@ -16,7 +16,7 @@ void SpeedAll(bool compareToStl) {
 #define TIME_CALL(func, params, paramsFast) { \
 	std::vector<std::string> row; \
 	if (compareToStl) { \
-		double timeMine = Speed_##func<ArrayHash>params; \
+		double timeMine = Speed_##func<ArrayWithHash>params; \
 		double timeStl = Speed_##func<StdMapWrapper>params; \
 		row.push_back(#func); \
 		row.push_back(#params); \
@@ -25,7 +25,7 @@ void SpeedAll(bool compareToStl) {
 		row.push_back(to_string(timeStl / timeMine, "speedup: %5.2lf")); \
 	} \
 	else { \
-		double timeMine = Speed_##func<ArrayHash>paramsFast; \
+		double timeMine = Speed_##func<ArrayWithHash>paramsFast; \
 		row.push_back(#func); \
 		row.push_back(#paramsFast); \
 		row.push_back(to_string(timeMine, "mine: %7.2lf")); \
