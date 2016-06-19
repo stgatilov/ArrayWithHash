@@ -284,6 +284,9 @@ class ArrayHash {
 			}
 		}
 
+		DeallocateBuffer<Key>(newHashKeys);
+		DeallocateBuffer<Value>(newHashValues);
+
 		//update hash count
 		if (RELOC_ARRAY)
 			hashCount = totalCount - arrayCount;
