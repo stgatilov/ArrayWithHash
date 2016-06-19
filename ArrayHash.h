@@ -32,6 +32,14 @@ inline bool IsEmpty(const Value &value) { return value == EMPTY_VALUE; }
 //inline void ConstructEmpty(Value *value) { value = EMPTY_VALUE; }
 inline void SetEmpty(Value &value) { value = EMPTY_VALUE; }
 
+static const bool RELOCATE_WITH_MEMCPY = true;
+#ifndef AH_NO_CPP11
+	#define AH_MOVE(x) std::move(x)
+#else
+	#define AH_MOVE(x) (x)
+#endif
+
+
 inline Size HashFunction(Key key) {
 	//Knuth's function: http://stackoverflow.com/a/665545/556899
 	return Size(2654435761) * Size(key);
@@ -115,10 +123,22 @@ class ArrayHash {
 	}
 
 	static inline void RelocateOne(Value &dst, const Value &src) {
-		memcpy(&dst, &src, sizeof(Value));
+		if (RELOCATE_WITH_MEMCPY)
+			memcpy(&dst, &src, sizeof(Value));
+		else {
+			dst = AH_MOVE(src);
+			src.~Value();
+		}
 	}
 	static inline void RelocateMany(Value *dst, const Value *src, Size cnt) {
-		memcpy(dst, src, cnt * sizeof(Value));
+		if (RELOCATE_WITH_MEMCPY)
+			memcpy(dst, src, cnt * sizeof(Value));
+		else {
+			for (Size i = 0; i < cnt; i++) {
+				dst[i] = AH_MOVE(src[i]);
+				src[i].~Value();
+			}
+		}
 	}
 
 	inline bool InArray(Key key) const {
@@ -329,20 +349,20 @@ class ArrayHash {
 	Value *HashSet(Key key, Value value) {
 		if (IsHashFull(hashFill, hashSize)) {
 			AdaptSizes(key);
-			return Set(key, value);
+			return Set(key, AH_MOVE(value));
 		}
 		Size cell = FindCellKeyOrEmpty(key);
 		hashFill += (hashKeys[cell] == EMPTY_KEY);
 		hashCount += (hashKeys[cell] == EMPTY_KEY);
 		hashKeys[cell] = key;
-		new (&hashValues[cell]) Value(value);	//change?...
+		new (&hashValues[cell]) Value(AH_MOVE(value));
 		return &hashValues[cell];
 	}
 
 	Value *HashSetIfNew(Key key, Value value) {
 		if (IsHashFull(hashFill, hashSize)) {
 			AdaptSizes(key);
-			return SetIfNew(key, value);
+			return SetIfNew(key, AH_MOVE(value));
 		}
 		Size cell = FindCellKeyOrEmpty(key);
 		if (hashKeys[cell] != EMPTY_KEY)
@@ -350,7 +370,7 @@ class ArrayHash {
 		hashFill++;
 		hashCount++;
 		hashKeys[cell] = key;
-		new (&hashValues[cell]) Value(value);	//change?...
+		new (&hashValues[cell]) Value(AH_MOVE(value));
 		return nullptr;
 	}
 
@@ -482,11 +502,11 @@ public:
 		if (InArray(key)) {
 			Value &oldVal = arrayValues[key];
 			arrayCount += IsEmpty(oldVal);	//branchless
-			oldVal = value;
+			oldVal = AH_MOVE(value);
 			return &oldVal;
 		}
 		else
-			return HashSet(key, value);
+			return HashSet(key, AH_MOVE(value));
 	}
 
 	//if key is present, then returns pointer to it
@@ -497,7 +517,7 @@ public:
 		if (InArray(key)) {
 			Value &oldVal = arrayValues[key];
 			if (IsEmpty(oldVal)) {					//real branch
-				oldVal = value;
+				oldVal = AH_MOVE(value);
 				arrayCount++;
 				return nullptr;
 			}
@@ -512,7 +532,7 @@ public:
 			return empty ? nullptr : pOldVal;*/
 		}
 		else
-			return HashSetIfNew(key, value);
+			return HashSetIfNew(key, AH_MOVE(value));
 	}
 
 	//removes given key (if present)
@@ -521,7 +541,7 @@ public:
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
 			arrayCount -= !IsEmpty(val);	//branchless
-			val = EMPTY_VALUE;
+			SetEmpty(val);
 		}
 		else
 			HashRemove(key);
@@ -533,7 +553,7 @@ public:
 		assert(!IsEmpty(*ptr));
 		if (InArray(ptr)) {
 			arrayCount--;
-			*ptr = EMPTY_VALUE;
+			SetEmpty(*ptr);
 		}
 		else
 			HashRemovePtr(ptr);
