@@ -30,7 +30,7 @@ static const Key REMOVED_KEY = std::numeric_limits<Key>::max() - 1;
 static const Value EMPTY_VALUE = std::numeric_limits<Value>::max();
 inline bool IsEmpty(const Value &value) { return value == EMPTY_VALUE; }
 //inline void ConstructEmpty(Value *value) { value = EMPTY_VALUE; }
-inline void SetEmpty(Value &value) { value = EMPTY_VALUE; }
+inline Value GetEmpty() { return EMPTY_VALUE; }
 
 static const bool RELOCATE_WITH_MEMCPY = true;
 #ifndef AH_NO_CPP11
@@ -216,8 +216,8 @@ class ArrayHash {
 		//Note: trivial relocation
 		RelocateMany(newArrayValues, arrayValues, arraySize);
 		DeallocateBuffer<Value>(arrayValues);
-		//some alternative?...
-		std::uninitialized_fill_n(newArrayValues + arraySize, newArraySize - arraySize, EMPTY_VALUE);
+		for (Value *ptr = newArrayValues + arraySize; ptr < newArrayValues + newArraySize; ptr++)
+			new (ptr) Value(GetEmpty());
 
 		std::swap(arrayValues, newArrayValues);
 		std::swap(arraySize, newArraySize);
@@ -334,9 +334,9 @@ class ArrayHash {
 
 	Value HashGet(Key key) const {
 		if (hashSize == 0)
-			return EMPTY_VALUE;
+			return GetEmpty();
 		Size cell = FindCellKeyOrEmpty(key);
-		return hashKeys[cell] == EMPTY_KEY ? EMPTY_VALUE : hashValues[cell];
+		return hashKeys[cell] == EMPTY_KEY ? GetEmpty() : hashValues[cell];
 	}
 
 	Value *HashGetPtr(Key key) const {
@@ -458,8 +458,10 @@ public:
 
 	//remove all elements without shrinking
 	void Clear() {
-		if (arraySize && arrayCount)
-			std::fill_n(arrayValues, arraySize, EMPTY_VALUE);
+		if (arraySize && arrayCount) {
+			for (Size i = 0; i < arraySize; i++)
+				new (&arrayValues[i]) Value(GetEmpty());
+		}
 		if (hashSize && hashFill) {
 			DestroyAllHashValues();
 			std::fill_n(hashKeys, hashSize, EMPTY_KEY);
@@ -541,7 +543,7 @@ public:
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
 			arrayCount -= !IsEmpty(val);	//branchless
-			SetEmpty(val);
+			val = GetEmpty();
 		}
 		else
 			HashRemove(key);
@@ -553,7 +555,7 @@ public:
 		assert(!IsEmpty(*ptr));
 		if (InArray(ptr)) {
 			arrayCount--;
-			SetEmpty(*ptr);
+			*ptr = GetEmpty();
 		}
 		else
 			HashRemovePtr(ptr);
