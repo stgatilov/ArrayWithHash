@@ -9,12 +9,6 @@
 
 #include "ArrayWithHash_Utils.h"
 
-// Key - some integer
-//   special values: EMPTY, REMOVED
-// Value - POD (bool, int, double, pointer, POD struct, etc)
-//   special value: EMPTY
-//   zero-byte empty? NO
-// shrinking? NO
 
 typedef int32_t Key;
 typedef int32_t Value;
