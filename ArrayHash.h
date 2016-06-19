@@ -114,6 +114,13 @@ class ArrayHash {
 		operator delete (buffer);
 	}
 
+	static inline void RelocateOne(Value &dst, const Value &src) {
+		memcpy(&dst, &src, sizeof(Value));
+	}
+	static inline void RelocateMany(Value *dst, const Value *src, Size cnt) {
+		memcpy(dst, src, cnt * sizeof(Value));
+	}
+
 	inline bool InArray(Key key) const {
 		return Size(key) < arraySize;
 	}
@@ -187,7 +194,7 @@ class ArrayHash {
 	void RelocateArrayPart(Size &newArraySize) {
 		Value *newArrayValues = AllocateBuffer<Value>(newArraySize);
 		//Note: trivial relocation
-		memcpy(newArrayValues, arrayValues, arraySize * sizeof(Value));
+		RelocateMany(newArrayValues, arrayValues, arraySize);
 		DeallocateBuffer<Value>(arrayValues);
 		//some alternative?...
 		std::uninitialized_fill_n(newArrayValues + arraySize, newArraySize - arraySize, EMPTY_VALUE);
@@ -219,7 +226,8 @@ class ArrayHash {
 			if (key != EMPTY_KEY && key != REMOVED_KEY) {
 				const Value &value = hashValues[pos];
 				if (RELOC_ARRAY && InArray(key)) {
-					arrayValues[key] = value;
+					arrayValues[key].~Value();
+					RelocateOne(arrayValues[key], value);
 					arrayCount++;
 				}
 				else {
@@ -228,7 +236,7 @@ class ArrayHash {
 					hashKeys[cell] = key;
 					//move value if necessary
 					if (cell != pos)
-						hashValues[cell] = value;
+						RelocateOne(hashValues[cell], value);
 				}
 			}
 
@@ -248,11 +256,9 @@ class ArrayHash {
 			RelocateArrayPart(newArraySize);
 
 		//create new hash table and swap with it
-		Key *newHashKeys(AllocateBuffer<Key>(newHashSize));
+		Key *newHashKeys = AllocateBuffer<Key>(newHashSize);
 		std::uninitialized_fill_n(newHashKeys, newHashSize, EMPTY_KEY);
-		Value *newHashValues(AllocateBuffer<Value>(newHashSize));
-		for (Size i = 0; i < newHashSize; i++)
-			new(newHashValues + i) Value;
+		Value *newHashValues = AllocateBuffer<Value>(newHashSize);
 
 		std::swap(hashKeys, newHashKeys);
 		std::swap(hashValues, newHashValues);
@@ -267,13 +273,14 @@ class ArrayHash {
 				continue;
 			const Value &value = newHashValues[i];
 			if (RELOC_ARRAY && InArray(key)) {
-				arrayValues[key] = value;
+				arrayValues[key].~Value();
+				RelocateOne(arrayValues[key], value);
 				arrayCount++;
 			}
 			else {
 				Size cell = FindCellEmpty(key);
 				hashKeys[cell] = key;
-				hashValues[cell] = value;
+				RelocateOne(hashValues[cell], value);
 			}
 		}
 
@@ -325,7 +332,7 @@ class ArrayHash {
 		hashFill += (hashKeys[cell] == EMPTY_KEY);
 		hashCount += (hashKeys[cell] == EMPTY_KEY);
 		hashKeys[cell] = key;
-		hashValues[cell] = value;
+		new (&hashValues[cell]) Value(value);	//change?...
 		return &hashValues[cell];
 	}
 
@@ -340,7 +347,7 @@ class ArrayHash {
 		hashFill++;
 		hashCount++;
 		hashKeys[cell] = key;
-		hashValues[cell] = value;
+		new (&hashValues[cell]) Value(value);	//change?...
 		return nullptr;
 	}
 
@@ -348,10 +355,11 @@ class ArrayHash {
 		if (hashSize == 0)
 			return;
 		Size cell = FindCellKeyOrEmpty(key);
-		if (hashKeys[cell] != EMPTY_KEY) {
-			hashKeys[cell] = REMOVED_KEY;
-			hashCount--;
-		}
+		if (hashKeys[cell] == EMPTY_KEY)
+			return;
+		hashKeys[cell] = REMOVED_KEY;
+		hashCount--;
+		hashValues[cell].~Value();
 	}
 
 	void HashRemovePtr(Value *ptr) {
@@ -359,6 +367,7 @@ class ArrayHash {
 		assert(hashKeys[cell] != EMPTY_KEY && hashKeys[cell] != REMOVED_KEY);
 		hashKeys[cell] = REMOVED_KEY;
 		hashCount--;
+		hashValues[cell].~Value();
 	}
 
 	inline void Flush() {
@@ -381,6 +390,11 @@ class ArrayHash {
 		hashValues = iSource.hashValues;
 		hashKeys = iSource.hashKeys;
 	}
+	void DestroyAllHashValues() {
+		for (Size i = 0; i < hashSize; i++)
+			if (hashKeys[i] != EMPTY_KEY && hashKeys[i] != REMOVED_KEY)
+				hashValues[i].~Value();
+	}
 
 	//non-copyable
 	ArrayHash (const ArrayHash &iSource);
@@ -393,8 +407,7 @@ public:
 	~ArrayHash() {
 		for (Size i = 0; i < arraySize; i++)
 			arrayValues[i].~Value();
-		for (Size i = 0; i < hashSize; i++)
-			hashValues[i].~Value();
+		DestroyAllHashValues();
 		DeallocateBuffer<Value>(arrayValues);
 		DeallocateBuffer<Value>(hashValues);
 		DeallocateBuffer<Key>(hashKeys);
@@ -424,8 +437,10 @@ public:
 	void Clear() {
 		if (arraySize && arrayCount)
 			std::fill_n(arrayValues, arraySize, EMPTY_VALUE);
-		if (hashSize && hashFill)
+		if (hashSize && hashFill) {
+			DestroyAllHashValues();
 			std::fill_n(hashKeys, hashSize, EMPTY_KEY);
+		}
 		arrayCount = hashCount = hashFill = 0;
 	}
 
@@ -586,14 +601,14 @@ public:
 			Size trueHashCount = 0, trueHashFill = 0;
 			for (Size i = 0; i < hashSize; i++) {
 				Key key = hashKeys[i];
-				const Value &value = hashValues[i];
 				ASSERT_ALWAYS(Size(key) >= arraySize);
 				if (key != EMPTY_KEY)
 					trueHashFill++;
 				if (key != EMPTY_KEY && key != REMOVED_KEY) {
 					trueHashCount++;
-					ASSERT_ALWAYS(!IsEmpty(value));
-				}
+					const Value &value = hashValues[i];
+					ASSERT_ALWAYS(!IsEmpty(value));	//must be alive
+				} //hashValues[i] must be dead otherwise
 			}
 			ASSERT_ALWAYS(hashCount == trueHashCount && hashFill == trueHashFill);
 		}
