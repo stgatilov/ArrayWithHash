@@ -8,6 +8,11 @@
 template<class type> struct EquallySizedInteger {};
 template<> struct EquallySizedInteger<float> { typedef int32_t sint; };
 template<> struct EquallySizedInteger<double> { typedef int64_t sint; };
+//workaround for compile-time constant max values of integers
+template<class type> struct IntegerMaxValue {
+	static const int bits = 8 * sizeof(type) - (1 + std::is_signed<type>::value);
+	static const type max = (type(1) << bits) - 1 + (type(1) << bits);
+};
 
 //default hash function by Knuth: http://stackoverflow.com/a/665545/556899
 inline uint32_t DefaultHashFunction(uint32_t key) {
@@ -66,9 +71,10 @@ template<class Key> struct DefaultKeyTraits {
 	typedef typename std::make_unsigned<Key>::type Size;
 
 	//special value of Key: denotes empty cell in hash table
-	static const Key EMPTY_KEY = INT_MAX; //TODO: std::numeric_limits<Key>::max();
+	//static const Key EMPTY_KEY = std::numeric_limits<Key>::max();
+	static const Key EMPTY_KEY = IntegerMaxValue<Key>::max;
 	//special value of Key: denotes removed cell in hash table
-	static const Key REMOVED_KEY = INT_MAX-1; //TODO: std::numeric_limits<Key>::max() - 1;
+	static const Key REMOVED_KEY = EMPTY_KEY - 1;
 
 	//hash function used for hash table
 	static inline Size HashFunction(Key key) {
