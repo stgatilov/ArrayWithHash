@@ -1,32 +1,14 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <algorithm>
 #include <cassert>
 #include <set>
-#include <limits>
 
 #include "ArrayWithHash_Utils.h"
-
-
-typedef int32_t Key;
-typedef int32_t Value;
-typedef std::make_unsigned<Key>::type Size;
-
-static const Key EMPTY_KEY = std::numeric_limits<Key>::max();
-static const Key REMOVED_KEY = std::numeric_limits<Key>::max() - 1;
-
-static const Value EMPTY_VALUE = std::numeric_limits<Value>::max();
-inline bool IsEmpty(const Value &value) { return value == EMPTY_VALUE; }
-inline Value GetEmpty() { return EMPTY_VALUE; }
-
-static const bool RELOCATE_WITH_MEMCPY = true;
-
-inline Size HashFunction(Key key) {
-	//Knuth's function: http://stackoverflow.com/a/665545/556899
-	return Size(2654435761) * Size(key);
-}
+#ifndef AWH_NO_CPP11
+#include "ArrayWithHash_Traits.h"
+#endif
 
 
 static const double ARRAY_MIN_FILL = 0.45;
@@ -34,13 +16,24 @@ static const double HASH_MIN_FILL = 0.30;
 static const double HASH_MAX_FILL = 0.75;
 static const size_t ARRAY_MIN_SIZE = 8;
 static const size_t HASH_MIN_SIZE = 8;
-
-static inline Size IsHashFull(Size cfill, Size sz) {
+template<class Size> static inline bool IsHashFull(Size cfill, Size sz) {
 	return cfill >= ((sz >> 2) * 3);
 }
 
 
+template<
+	class Key, class Value,
+#ifndef AWH_NO_CPP11
+	class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>
+#else
+	class KeyTraits, class ValueTraits
+#endif
+>
 class ArrayWithHash {
+	typedef typename KeyTraits::Size Size;
+	static const Key EMPTY_KEY = KeyTraits::EMPTY_KEY;
+	static const Key REMOVED_KEY = KeyTraits::REMOVED_KEY;
+
 	Size arrayCount, arraySize;
 	Size hashSize, hashCount, hashFill;
 	Value *arrayValues, *hashValues;
@@ -57,7 +50,7 @@ class ArrayWithHash {
 	}
 
 	static inline void RelocateOne(Value &dst, const Value &src) {
-		if (RELOCATE_WITH_MEMCPY)
+		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(&dst, &src, sizeof(Value));
 		else {
 			dst = AWH_MOVE(src);
@@ -65,7 +58,7 @@ class ArrayWithHash {
 		}
 	}
 	static inline void RelocateMany(Value *dst, const Value *src, Size cnt) {
-		if (RELOCATE_WITH_MEMCPY)
+		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(dst, src, cnt * sizeof(Value));
 		else {
 			for (Size i = 0; i < cnt; i++) {
@@ -85,14 +78,14 @@ class ArrayWithHash {
 
 	Size FindCellEmpty(Key key) const {
 		assert(hashSize);
-		Size cell = HashFunction(key) & (hashSize - 1);
+		Size cell = KeyTraits::HashFunction(key) & (hashSize - 1);
 		while (hashKeys[cell] != EMPTY_KEY)
 			cell = (cell + 1) & (hashSize - 1);
 		return cell;
 	}
 	Size FindCellKeyOrEmpty(Key key) const {
 		assert(hashSize);
-		Size cell = HashFunction(key) & (hashSize - 1);
+		Size cell = KeyTraits::HashFunction(key) & (hashSize - 1);
 		while (hashKeys[cell] != EMPTY_KEY && hashKeys[cell] != key)
 			cell = (cell + 1) & (hashSize - 1);
 		return cell;
@@ -151,7 +144,7 @@ class ArrayWithHash {
 		RelocateMany(newArrayValues, arrayValues, arraySize);
 		DeallocateBuffer<Value>(arrayValues);
 		for (Value *ptr = newArrayValues + arraySize; ptr < newArrayValues + newArraySize; ptr++)
-			new (ptr) Value(GetEmpty());
+			new (ptr) Value(ValueTraits::GetEmpty());
 
 		std::swap(arrayValues, newArrayValues);
 		std::swap(arraySize, newArraySize);
@@ -268,9 +261,9 @@ class ArrayWithHash {
 
 	Value HashGet(Key key) const {
 		if (hashSize == 0)
-			return GetEmpty();
+			return ValueTraits::GetEmpty();
 		Size cell = FindCellKeyOrEmpty(key);
-		return hashKeys[cell] == EMPTY_KEY ? GetEmpty() : hashValues[cell];
+		return hashKeys[cell] == EMPTY_KEY ? ValueTraits::GetEmpty() : hashValues[cell];
 	}
 
 	Value *HashGetPtr(Key key) const {
@@ -394,7 +387,7 @@ public:
 	void Clear() {
 		if (arraySize && arrayCount) {
 			for (Size i = 0; i < arraySize; i++)
-				new (&arrayValues[i]) Value(GetEmpty());
+				new (&arrayValues[i]) Value(ValueTraits::GetEmpty());
 		}
 		if (hashSize && hashFill) {
 			DestroyAllHashValues();
@@ -423,7 +416,7 @@ public:
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
-			return IsEmpty(val) ? NULL : &val;	//branchless
+			return ValueTraits::IsEmpty(val) ? NULL : &val;	//branchless
 		}
 		else
 			return HashGetPtr(key);
@@ -434,10 +427,10 @@ public:
 	//returns pointer to the updated value
 	inline Value *Set(Key key, Value value) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
-		assert(!IsEmpty(value));
+		assert(!ValueTraits::IsEmpty(value));
 		if (InArray(key)) {
 			Value &oldVal = arrayValues[key];
-			arrayCount += IsEmpty(oldVal);	//branchless
+			arrayCount += ValueTraits::IsEmpty(oldVal);	//branchless
 			oldVal = AWH_MOVE(value);
 			return &oldVal;
 		}
@@ -449,10 +442,10 @@ public:
 	//otherwise adds a new key with associated value, returns NULL
 	inline Value *SetIfNew(Key key, Value value) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
-		assert(!IsEmpty(value));
+		assert(!ValueTraits::IsEmpty(value));
 		if (InArray(key)) {
 			Value &oldVal = arrayValues[key];
-			if (IsEmpty(oldVal)) {					//real branch
+			if (ValueTraits::IsEmpty(oldVal)) {					//real branch
 				oldVal = AWH_MOVE(value);
 				arrayCount++;
 				return NULL;
@@ -461,7 +454,7 @@ public:
 				return &oldVal;
 /*			Value *pOldVal = &arrayValues[key];		//branchless version worth it?
 			Value stored = *pOldVal;
-			bool empty = IsEmpty(stored);
+			bool empty = ValueTraits::IsEmpty(stored);
 			stored = (empty ? value : stored);
 			arrayCount += empty;
 			*pOldVal = stored;
@@ -476,8 +469,8 @@ public:
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
-			arrayCount -= !IsEmpty(val);	//branchless
-			val = GetEmpty();
+			arrayCount -= !ValueTraits::IsEmpty(val);	//branchless
+			val = ValueTraits::GetEmpty();
 		}
 		else
 			HashRemove(key);
@@ -486,10 +479,10 @@ public:
 	//removes key by pointer to its value
 	inline void RemovePtr(Value *ptr) {
 		assert(ptr);
-		assert(!IsEmpty(*ptr));
+		assert(!ValueTraits::IsEmpty(*ptr));
 		if (InArray(ptr)) {
 			arrayCount--;
-			*ptr = GetEmpty();
+			*ptr = ValueTraits::GetEmpty();
 		}
 		else
 			HashRemovePtr(ptr);
@@ -523,7 +516,7 @@ public:
 	//it must return false to continue iteration, true to stop
 	template<class Action> void ForEach(Action action) const {
 		for (Size i = 0; i < arraySize; i++)
-			if (!IsEmpty(arrayValues[i]))
+			if (!ValueTraits::IsEmpty(arrayValues[i]))
 				if (action(Key(i), arrayValues[i]))
 					return;
 		for (Size i = 0; i < hashSize; i++)
@@ -551,7 +544,7 @@ public:
 			//iterate over array
 			Size trueArrayCount = 0;
 			for (Size i = 0; i < arraySize; i++) {
-				if (IsEmpty(arrayValues[i]))
+				if (ValueTraits::IsEmpty(arrayValues[i]))
 					continue;
 				trueArrayCount++;
 			}
@@ -566,7 +559,7 @@ public:
 				if (key != EMPTY_KEY && key != REMOVED_KEY) {
 					trueHashCount++;
 					const Value &value = hashValues[i];
-					AWH_ASSERT_ALWAYS(!IsEmpty(value));	//must be alive
+					AWH_ASSERT_ALWAYS(!ValueTraits::IsEmpty(value));	//must be alive
 				} //hashValues[i] must be dead otherwise
 			}
 			AWH_ASSERT_ALWAYS(hashCount == trueHashCount && hashFill == trueHashFill);
@@ -592,11 +585,14 @@ public:
 		}
 		return true;
 	}
-
 };
 
 namespace std {
-	inline void swap(ArrayWithHash &a, ArrayWithHash &b) {
+	template<class Key, class Value, class KeyTraits, class ValueTraits>
+	inline void swap(
+		ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &a,
+		ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &b
+	) {
 		a.Swap(b);
 	}
 };

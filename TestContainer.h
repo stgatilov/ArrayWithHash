@@ -7,14 +7,20 @@
 //Testing wrapper around both ArrayHash and StdMapWrapper.
 //It checks that all the outputs of all method calls are the same.
 //Used only for testing purposes
+template<class Key, class Value, class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>>
 class TestContainer {
-	ArrayWithHash obj;
-	StdMapWrapper check;
+	typedef ArrayWithHash<Key, Value, KeyTraits, ValueTraits> TArrayWithHash;
+	typedef StdMapWrapper<Key, Value, KeyTraits, ValueTraits> TStdMapWrapper;
+	typedef typename TStdMapWrapper::Ptr TPtr;
+	typedef typename KeyTraits::Size Size;
+
+	TArrayWithHash obj;
+	TStdMapWrapper check;
 
 	static inline bool Same(Value a, Value b) {
 		return a == b;
 	}
-	static inline bool Same(Value *a, StdMapWrapper::Ptr b) {
+	static inline bool Same(Value *a, TPtr b) {
 		if (!a == !b)
 			return true;
 		return Same(*a, *b);
@@ -48,7 +54,7 @@ public:
 	Value *GetPtr(Key key) const {
 		if (printCommands) std::cout << "GetPtr " << key << std::endl;
 		Value *a = obj.GetPtr(key);
-		StdMapWrapper::Ptr b = check.GetPtr(key);
+		TPtr b = check.GetPtr(key);
 		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
@@ -56,7 +62,7 @@ public:
 	Value *Set(Key key, Value value) {
 		if (printCommands) std::cout << "Set " << key << " " << value << std::endl;
 		Value *a = obj.Set(key, value);
-		StdMapWrapper::Ptr b = check.Set(key, value);
+		TPtr b = check.Set(key, value);
 		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
@@ -64,7 +70,7 @@ public:
 	Value *SetIfNew(Key key, Value value) {
 		if (printCommands) std::cout << "SetIfNew " << key << " " << value << std::endl;
 		Value *a = obj.SetIfNew(key, value);
-		StdMapWrapper::Ptr b = check.SetIfNew(key, value);
+		TPtr b = check.SetIfNew(key, value);
 		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;

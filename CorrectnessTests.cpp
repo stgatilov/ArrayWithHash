@@ -5,9 +5,11 @@
 #include <numeric>
 #include <cstring>
 
+
 bool quietTests = false;
 
-void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
+template<class Key, class Value, class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>>
+void TestRandom(TestContainer<Key, Value, KeyTraits, ValueTraits> &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
 	double allSum = std::accumulate(typeProbs.begin(), typeProbs.end(), 0.0);
 	std::string signature = "|";
 	for (size_t i = 0; i < typeProbs.size(); i++) {
@@ -75,7 +77,7 @@ void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operatio
 			dict.Reserve(arrSz, hashSz, flag == 0);
 		}
 		else if (type == 8) {
-			TestContainer tmp;
+			TestContainer<Key, Value, KeyTraits, ValueTraits> tmp;
 			tmp.Set(42, 8);
 			dict.Swap(tmp);
 		}
@@ -92,42 +94,42 @@ void TestRandom(TestContainer &dict, std::vector<double> typeProbs, int operatio
 
 void TestsRound(std::mt19937 &rnd, int level) {
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, 0, 100, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, 0, 100, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1}, 1000, -50, 50, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 1}, 1000, -50, 50, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 50, 50, 1, 1, 1, 1, 1}, 1000, -10, 10, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 50, 50, 1, 1, 1, 1, 1}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, -100, 100, rnd);
-		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, -120, 120, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, -100, 100, rnd);
+		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, -120, 120, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 0, 100, rnd);
-		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 100, 300, rnd);
-		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, 0, 500, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 0, 100, rnd);
+		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 100, 300, rnd);
+		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, 0, 500, rnd);
 	}
 	{
-		TestContainer dict(level);
-		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
+		TestContainer<int32_t, int32_t> dict(level);
+		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
 	}
 }

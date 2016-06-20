@@ -16,8 +16,8 @@ void SpeedAll(bool compareToStl) {
 #define TIME_CALL(func, params, paramsFast) { \
 	std::vector<std::string> row; \
 	if (compareToStl) { \
-		double timeMine = Speed_##func<ArrayWithHash>params; \
-		double timeStl = Speed_##func<StdMapWrapper>params; \
+		double timeMine = Speed_##func<ArrayWithHash<int32_t, int32_t>>params; \
+		double timeStl = Speed_##func<StdMapWrapper<int32_t, int32_t>>params; \
 		row.push_back(#func); \
 		row.push_back(#params); \
 		row.push_back(to_string(timeMine, "mine: %7.2lf")); \
@@ -25,7 +25,7 @@ void SpeedAll(bool compareToStl) {
 		row.push_back(to_string(timeStl / timeMine, "speedup: %5.2lf")); \
 	} \
 	else { \
-		double timeMine = Speed_##func<ArrayWithHash>paramsFast; \
+		double timeMine = Speed_##func<ArrayWithHash<int32_t, int32_t>>paramsFast; \
 		row.push_back(#func); \
 		row.push_back(#paramsFast); \
 		row.push_back(to_string(timeMine, "mine: %7.2lf")); \

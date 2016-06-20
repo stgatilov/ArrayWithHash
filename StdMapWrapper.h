@@ -6,10 +6,12 @@
 
 //Wrapper aroung std::unordered_map (or std::map) with interface of ArrayHash.
 //Used mainly for comparison of ArrayHash with STL containers.
+template<class Key, class Value, class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>>
 class StdMapWrapper {
 //	typedef std::map<Key, Value> Map;
 	typedef std::unordered_map<Key, Value> Map;
-	typedef Map::iterator Iter;
+	typedef typename Map::iterator Iter;
+	typedef typename KeyTraits::Size Size;
 
 	Map dict;
 public:
@@ -35,7 +37,7 @@ public:
 	}
 	inline Value Get(Key key) const {
 		Iter it = const_cast<Map&>(dict).find(key);
-		return it == dict.end() ? EMPTY_VALUE : it->second;
+		return it == dict.end() ? ValueTraits::GetEmpty() : it->second;
 	}
 	inline Ptr GetPtr(Key key) const {
 		Iter it = const_cast<Map&>(dict).find(key);
@@ -69,7 +71,7 @@ public:
 	//for testing only
 	template<class Rnd> Key SomeKey(Rnd &rnd) const {
 		int idx = std::uniform_int_distribution<int>(0, dict.size() - 1)(rnd);
-		Map::const_iterator iter = dict.begin();
+		typename Map::const_iterator iter = dict.begin();
 		std::advance(iter, idx);
 		return iter->first;
 	}

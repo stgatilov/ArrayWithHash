@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 //for testing purposes and for method AssertCorrectness
 #define AWH_ASSERT_ALWAYS(expr) { \
 	if (!(expr)) { \
