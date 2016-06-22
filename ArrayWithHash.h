@@ -49,20 +49,20 @@ class ArrayWithHash {
 		operator delete (buffer);
 	}
 
-	static inline void RelocateOne(Value &dst, const Value &src) {
+	static inline void RelocateOne(Value &dst, Value &src) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(&dst, &src, sizeof(Value));
 		else {
-			dst = AWH_MOVE(src);
+			new (&dst) Value(AWH_MOVE(src));
 			src.~Value();
 		}
 	}
-	static inline void RelocateMany(Value *dst, const Value *src, Size cnt) {
+	static inline void RelocateMany(Value *dst, Value *src, Size cnt) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(dst, src, cnt * sizeof(Value));
 		else {
 			for (Size i = 0; i < cnt; i++) {
-				dst[i] = AWH_MOVE(src[i]);
+				new (&dst[i]) Value(AWH_MOVE(src[i]));
 				src[i].~Value();
 			}
 		}
@@ -171,7 +171,7 @@ class ArrayWithHash {
 			hashKeys[pos] = EMPTY_KEY;
 
 			if (key != EMPTY_KEY && key != REMOVED_KEY) {
-				const Value &value = hashValues[pos];
+				Value &value = hashValues[pos];
 				if (RELOC_ARRAY && InArray(key)) {
 					arrayValues[key].~Value();
 					RelocateOne(arrayValues[key], value);
@@ -218,7 +218,7 @@ class ArrayWithHash {
 			Key key = newHashKeys[i];
 			if (key == EMPTY_KEY || key == REMOVED_KEY)
 				continue;
-			const Value &value = newHashValues[i];
+			Value &value = newHashValues[i];
 			if (RELOC_ARRAY && InArray(key)) {
 				arrayValues[key].~Value();
 				RelocateOne(arrayValues[key], value);
@@ -279,9 +279,12 @@ class ArrayWithHash {
 			return Set(key, AWH_MOVE(value));
 		}
 		Size cell = FindCellKeyOrEmpty(key);
-		hashFill += (hashKeys[cell] == EMPTY_KEY);
-		hashCount += (hashKeys[cell] == EMPTY_KEY);
+		bool newElement = (hashKeys[cell] == EMPTY_KEY);
+		hashFill += newElement;
+		hashCount += newElement;
 		hashKeys[cell] = key;
+		if (!newElement)
+			hashValues[cell].~Value();
 		new (&hashValues[cell]) Value(AWH_MOVE(value));
 		return &hashValues[cell];
 	}
