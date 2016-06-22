@@ -15,6 +15,11 @@ class StdMapWrapper {
 
 	Map dict;
 public:
+	typedef Key Key;
+	typedef Value Value;
+	typedef KeyTraits KeyTraits;
+	typedef ValueTraits ValueTraits;
+
 	struct Ptr {
 		bool null;
 		Iter it;

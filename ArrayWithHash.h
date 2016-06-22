@@ -354,6 +354,11 @@ class ArrayWithHash {
 	void operator= (const ArrayWithHash &iSource);
 
 public:
+	typedef Key Key;
+	typedef Value Value;
+	typedef KeyTraits KeyTraits;
+	typedef ValueTraits ValueTraits;
+
 	ArrayWithHash() {
 		Flush();
 	}

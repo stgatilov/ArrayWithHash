@@ -27,6 +27,11 @@ class TestContainer {
 	}
 
 public:
+	typedef Key Key;
+	typedef Value Value;
+	typedef KeyTraits KeyTraits;
+	typedef ValueTraits ValueTraits;
+
 	int assertLevel;
 	bool printCommands;
 	TestContainer(int lvl = 2) {
