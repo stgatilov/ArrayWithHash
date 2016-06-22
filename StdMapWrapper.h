@@ -49,11 +49,11 @@ public:
 		return it == dict.end() ? Ptr() : Ptr(it);
 	}
 	inline Ptr Set(Key key, Value value) {
-		dict[key] = value;
+		dict[key] = AWH_MOVE(value);
 		return Ptr(dict.find(key));
 	}
 	inline Ptr SetIfNew(Key key, Value value) {
-		std::pair<Iter, bool> pib = dict.insert(std::make_pair(key, value));
+		std::pair<Iter, bool> pib = dict.insert(std::make_pair(key, AWH_MOVE(value)));
 		return pib.second ? Ptr() : Ptr(pib.first);
 	}
 	inline void Remove(Key key) {
