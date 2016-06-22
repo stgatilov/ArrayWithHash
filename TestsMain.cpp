@@ -25,7 +25,10 @@ int main(int argc, char **argv) {
 			if (sscanf(argv[i], "-t%d", &lvl) != 1)
 				lvl = 2;
 			std::mt19937 rnd;
-			while (1) TestsRound(rnd, lvl);
+			assertLevel = lvl;
+			//for (int t = 0; t < 10; t++)
+			while (1)
+				TestsRound(rnd);
 		}
 	}
 

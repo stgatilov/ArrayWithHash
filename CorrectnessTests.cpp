@@ -5,11 +5,15 @@
 #include <numeric>
 #include <cstring>
 
+//for leak detection
+//#include "vld.h"
 
 bool quietTests = false;
+int assertLevel = 2;
 
-template<class Key, class Value, class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>>
-void TestRandom(TestContainer<Key, Value, KeyTraits, ValueTraits> &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
+
+template<class Container, class Key>
+void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
 	double allSum = std::accumulate(typeProbs.begin(), typeProbs.end(), 0.0);
 	std::string signature = "|";
 	for (size_t i = 0; i < typeProbs.size(); i++) {
@@ -39,28 +43,31 @@ void TestRandom(TestContainer<Key, Value, KeyTraits, ValueTraits> &dict, std::ve
 	prefSums.front() = -1e+50;
 	prefSums.back() = 1e+50;
 
+	dict.assertLevel = assertLevel;
+	typedef Container::Value Value;
+
 	int doneOps = 0;
 	while (doneOps < operationsCount) {
 		double param = std::uniform_real_distribution<double>(0.0, 1.0)(rnd);
 		int type = std::lower_bound(prefSums.begin(), prefSums.end(), param) - prefSums.begin() - 1;
 
 		Key key = std::uniform_int_distribution<Key>(minKey, maxKey)(rnd);
-		Value value = std::uniform_int_distribution<int>(-10000, 10000)(rnd);
+		Value value = ValueTestingUtils<Value>::Generate(rnd);
 
 		if (type == 0) {
 			dict.GetSize();
 		}
-		else if (type == 1) {
+/*		else if (type == 1) {
 			dict.Get(key);
-		}
+		}*/
 		else if (type == 2) {
 			dict.GetPtr(key);
 		}
 		else if (type == 3) {
-			dict.Set(key, value);
+			dict.Set(key, std::move(value));
 		}
 		else if (type == 4) {
-			dict.SetIfNew(key, value);
+			dict.SetIfNew(key, std::move(value));
 		}
 		else if (type == 5) {
 			dict.Remove(key);
@@ -77,8 +84,12 @@ void TestRandom(TestContainer<Key, Value, KeyTraits, ValueTraits> &dict, std::ve
 			dict.Reserve(arrSz, hashSz, flag == 0);
 		}
 		else if (type == 8) {
-			TestContainer<Key, Value, KeyTraits, ValueTraits> tmp;
-			tmp.Set(42, 8);
+			Container tmp;
+			tmp.Set(0, ValueTestingUtils<Value>::Generate(rnd));
+			tmp.Set(1, ValueTestingUtils<Value>::Generate(rnd));
+			tmp.Set(2, ValueTestingUtils<Value>::Generate(rnd));
+			tmp.Set(42, ValueTestingUtils<Value>::Generate(rnd));
+			tmp.Set(27, ValueTestingUtils<Value>::Generate(rnd));
 			dict.Swap(tmp);
 		}
 		else if (type == 9) {
@@ -92,44 +103,60 @@ void TestRandom(TestContainer<Key, Value, KeyTraits, ValueTraits> &dict, std::ve
 	}
 }
 
-void TestsRound(std::mt19937 &rnd, int level) {
+void TestsRound_Int32(std::mt19937 &rnd) {
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, 0, 100, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, 0, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 1}, 1000, -50, 50, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1}, 1000, -50, 50, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 50, 50, 1, 1, 1, 1, 1}, 1000, -10, 10, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 50, 50, 1, 1, 1, 1, 1}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, -100, 100, rnd);
-		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, -120, 120, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, -100, 100, rnd);
+		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, -120, 120, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 0, 100, rnd);
-		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 100, 300, rnd);
-		TestRandom<int32_t, int32_t>(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, 0, 500, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 0, 100, rnd);
+		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 100, 300, rnd);
+		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, 0, 500, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict(level);
-		TestRandom<int32_t, int32_t>(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
+		TestContainer<int32_t, int32_t> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
 	}
+}
+
+void TestsRound_UniquePtr(std::mt19937 &rnd) {
+	{
+		TestContainer<int32_t, std::unique_ptr<int32_t>> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
+	}
+	{
+		TestContainer<int32_t, std::unique_ptr<int32_t>> dict;
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
+	}
+}
+
+void TestsRound(std::mt19937 &rnd) {
+	TestsRound_Int32(rnd);
+	TestsRound_UniquePtr(rnd);
 }

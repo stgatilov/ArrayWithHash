@@ -3,6 +3,41 @@
 #include <iostream>
 #include "ArrayWithHash.h"
 #include "StdMapWrapper.h"
+#include <memory>
+
+
+template<class Value> struct BaseValueTestingUtils {
+	static Value Generate(std::mt19937 &rnd) {
+		return std::uniform_int_distribution<Value>(Value(-10000), Value(10000))(rnd);
+	}
+	static Value Clone(const Value &src) {
+		return Value(src);
+	}
+	static bool AreEqual(const Value &a, const Value &b) {
+		return a == b;
+	}
+	static const Value &Content(const Value &a) {
+		return a;
+	}
+};
+
+template<class Value> struct ValueTestingUtils : public BaseValueTestingUtils<Value> {};
+template<class Value> struct ValueTestingUtils<std::unique_ptr<Value>> {
+	std::unique_ptr<Value> operator() (std::mt19937 &rnd) const {
+	}
+	static std::unique_ptr<Value> Generate(std::mt19937 &rnd) {
+		return std::unique_ptr<Value>(new Value(ValueTestingUtils<Value>::Generate(rnd)));
+	}
+	static std::unique_ptr<Value> Clone(const std::unique_ptr<Value> &src) {
+		return std::unique_ptr<Value>(new Value(ValueTestingUtils<Value>::Clone(*src)));
+	}
+	static bool AreEqual(const std::unique_ptr<Value> &a, const std::unique_ptr<Value> &b) {
+		return *a == *b;
+	}
+	static const Value &Content(const std::unique_ptr<Value> &a) {
+		return *a;
+	}
+};
 
 //Testing wrapper around both ArrayHash and StdMapWrapper.
 //It checks that all the outputs of all method calls are the same.
@@ -13,12 +48,13 @@ class TestContainer {
 	typedef StdMapWrapper<Key, Value, KeyTraits, ValueTraits> TStdMapWrapper;
 	typedef typename TStdMapWrapper::Ptr TPtr;
 	typedef typename KeyTraits::Size Size;
+	typedef ValueTestingUtils<Value> TestUtils;
 
 	TArrayWithHash obj;
 	TStdMapWrapper check;
 
-	static inline bool Same(Value a, Value b) {
-		return a == b;
+	static inline bool Same(const Value &a, const Value &b) {
+		return TestUtils::AreEqual(a, b);
 	}
 	static inline bool Same(Value *a, TPtr b) {
 		if (!a == !b)
@@ -65,17 +101,17 @@ public:
 		return a;
 	}
 	Value *Set(Key key, Value value) {
-		if (printCommands) std::cout << "Set " << key << " " << value << std::endl;
-		Value *a = obj.Set(key, value);
-		TPtr b = check.Set(key, value);
+		if (printCommands) std::cout << "Set " << key << " " << TestUtils::Content(value) << std::endl;
+		Value *a = obj.Set(key, TestUtils::Clone(value));
+		TPtr b = check.Set(key, TestUtils::Clone(value));
 		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
 	}
 	Value *SetIfNew(Key key, Value value) {
-		if (printCommands) std::cout << "SetIfNew " << key << " " << value << std::endl;
-		Value *a = obj.SetIfNew(key, value);
-		TPtr b = check.SetIfNew(key, value);
+		if (printCommands) std::cout << "SetIfNew " << key << " " << TestUtils::Content(value) << std::endl;
+		Value *a = obj.SetIfNew(key, TestUtils::Clone(value));
+		TPtr b = check.SetIfNew(key, TestUtils::Clone(value));
 		AWH_ASSERT_ALWAYS(Same(a, b));
 		obj.AssertCorrectness(assertLevel);
 		return a;
@@ -118,18 +154,18 @@ public:
 		check.Clear();
 		obj.AssertCorrectness(assertLevel);
 	}
-	Key CalcCheckSum() const {
-		Key sum;
+	int64_t CalcCheckSum() const {
+		int64_t sum;
 		auto Add = [&sum](Key key, Value &value) -> bool {
-			sum += key * 10 + Key(value);
+			sum += key * 10 + TestUtils::Content(value);
 			return false;
 		};
 		sum = 0;
 		obj.ForEach(Add);
-		Key a = sum;
+		int64_t a = sum;
 		sum = 0;
 		check.ForEach(Add);
-		Key b = sum;
+		int64_t b = sum;
 		AWH_ASSERT_ALWAYS(a == b);
 		return a;
 	}
