@@ -29,21 +29,21 @@ inline uint16_t DefaultHashFunction( int16_t key) { return DefaultHashFunction(u
 inline uint8_t  DefaultHashFunction( int8_t  key) { return DefaultHashFunction(uint8_t (key)); }
 
 //default empty value for custom types: default constructed instance
-template<class Value> inline bool DefaultIsEmpty(Value value, void*) {
+template<class Value> inline bool DefaultIsEmpty(const Value &value, void*) {
 	return value == Value();
 }
 template<class Value> inline Value DefaultGetEmpty(void*) {
 	return Value();
 }
 //default empty value for integers: maximal representable
-template<class Value> inline typename std::enable_if<std::is_integral<Value>::value, bool>::type DefaultIsEmpty(Value value, int) {
+template<class Value> inline typename std::enable_if<std::is_integral<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
 	return value == std::numeric_limits<Value>::max();
 }
 template<class Value> inline typename std::enable_if<std::is_integral<Value>::value, Value>::type DefaultGetEmpty(int) {
 	return std::numeric_limits<Value>::max();
 }
 //default empty value for floats: NaN with all bits set
-template<class Value> inline typename std::enable_if<std::is_floating_point<Value>::value, bool>::type DefaultIsEmpty(Value value, int) {
+template<class Value> inline typename std::enable_if<std::is_floating_point<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
 	typedef typename EquallySizedInteger<Value>::sint Int;
 	return *(Int*)&value == (Int)-1;
 }
@@ -57,7 +57,7 @@ template<class Value> inline typename std::enable_if<std::is_floating_point<Valu
 	return value;
 }
 //default empty value for raw pointers: maximal well-aligned pointer
-template<class Value> inline typename std::enable_if<std::is_pointer<Value>::value, bool>::type DefaultIsEmpty(Value value, int) {
+template<class Value> inline typename std::enable_if<std::is_pointer<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
 	return size_t(value) == (size_t(0) - sizeof(Value));
 }
 template<class Value> inline typename std::enable_if<std::is_pointer<Value>::value, Value>::type DefaultGetEmpty(int) {
@@ -87,7 +87,7 @@ template<class Key> struct DefaultKeyTraits {
 //Empty value is used for denoting empty elements in array.
 template<class Value> struct DefaultValueTraits {
 	//determines whether a given value is empty
-	static inline bool IsEmpty(Value value) {
+	static inline bool IsEmpty(const Value &value) {
 		return DefaultIsEmpty(value, 0);
 	}
 	//returns a temporary empty value
