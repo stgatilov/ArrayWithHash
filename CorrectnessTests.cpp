@@ -122,7 +122,7 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 
 #define DECL_CONTAINER(Key, Value) \
 	TestContainer<Key, Value> dict; \
-	sprintf(dict.label, "%s->%s", #Key, #Value);
+	sprintf(dict.label, "%s:%s", #Key, #Value);
 
 void TestsRound_Int32(std::mt19937 &rnd) {
 	{
@@ -189,8 +189,21 @@ void TestsRound_UniquePtr(std::mt19937 &rnd) {
 	}
 }
 
+void TestsRound_SharedPtr(std::mt19937 &rnd) {
+	{
+		DECL_CONTAINER(int32_t, std::shared_ptr<int64_t>);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -100, 100, rnd);
+	}
+	{
+		DECL_CONTAINER(int32_t, std::shared_ptr<uint16_t>);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -2000000000, 2000000000, rnd);
+	}
+
+}
+
 void TestsRound(std::mt19937 &rnd) {
 	TestsRound_Int32(rnd);
 	TestsRound_Real(rnd);
 	TestsRound_UniquePtr(rnd);
+	TestsRound_SharedPtr(rnd);
 }

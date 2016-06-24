@@ -48,6 +48,18 @@ template<class Value> struct ValueTestingUtils<std::unique_ptr<Value>> {
 	}
 };
 
+template<class Value> struct ValueTestingUtils<std::shared_ptr<Value>> : public BaseValueTestingUtils<std::shared_ptr<Value>> {
+	static std::shared_ptr<Value> Generate(std::mt19937 &rnd) {
+		if (UniDistrRandom(0, 1, rnd))
+			return std::shared_ptr<Value>(new Value(ValueTestingUtils<Value>::Generate(rnd)));
+		else
+			return std::make_shared<Value>(ValueTestingUtils<Value>::Generate(rnd));
+	}
+	static size_t Content(const std::shared_ptr<Value> &a) {
+		return size_t(a.get())/* + size_t(*a)*/;
+	}
+};
+
 //Testing wrapper around both ArrayHash and StdMapWrapper.
 //It checks that all the outputs of all method calls are the same.
 //Used only for testing purposes
