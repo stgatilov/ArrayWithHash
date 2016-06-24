@@ -169,6 +169,41 @@ void TestsRound_Int32(std::mt19937 &rnd) {
 	}
 }
 
+void TestsRound_Keys(std::mt19937 &rnd) {
+	{
+		DECL_CONTAINER(uint32_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, 0, 100, rnd);
+	}
+	{
+		DECL_CONTAINER(int64_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
+	}
+	{
+		DECL_CONTAINER(int64_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -(1LL << 62) + 1, (1LL << 62) - 1, rnd);
+	}
+	{
+		DECL_CONTAINER(uint64_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, 0ULL, (1ULL << 63) - 1, rnd);
+	}
+	{
+		DECL_CONTAINER(int16_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -30, 30, rnd);
+	}
+	{
+		DECL_CONTAINER(uint16_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, 0, 100, rnd);
+	}
+	{
+		DECL_CONTAINER(int8_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -30, 30, rnd);
+	}
+	{
+		DECL_CONTAINER(uint8_t, int32_t);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, 0, 30, rnd);
+	}
+}
+
 void TestsRound_Real(std::mt19937 &rnd) {
 	{
 		DECL_CONTAINER(int32_t, double);
@@ -206,6 +241,7 @@ void TestsRound_SharedPtr(std::mt19937 &rnd) {
 
 void TestsRound(std::mt19937 &rnd) {
 	TestsRound_Int32(rnd);
+	TestsRound_Keys(rnd);
 	TestsRound_Real(rnd);
 	TestsRound_UniquePtr(rnd);
 	TestsRound_SharedPtr(rnd);
