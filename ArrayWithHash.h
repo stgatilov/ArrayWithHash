@@ -43,7 +43,7 @@ class ArrayWithHash {
 	template<class Elem> static Elem* AllocateBuffer(Size elemCount) {
 		if (elemCount == 0)
 			return NULL;
-		return (Elem*) operator new (elemCount * sizeof(Elem));
+		return (Elem*) operator new (size_t(elemCount * sizeof(Elem)));
 	}
 	template<class Elem> static void DeallocateBuffer(Elem *buffer) {
 		operator delete (buffer);
@@ -59,7 +59,7 @@ class ArrayWithHash {
 	}
 	static inline void RelocateMany(Value *dst, Value *src, Size cnt) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
-			memcpy(dst, src, cnt * sizeof(Value));
+			memcpy(dst, src, size_t(cnt * sizeof(Value)));
 		else {
 			for (Size i = 0; i < cnt; i++) {
 				new (&dst[i]) Value(AWH_MOVE(src[i]));
