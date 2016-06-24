@@ -246,7 +246,7 @@ template<class Container> double Speed_GetPtrArrayRandomMix(int size, int repeat
 template<class Container> double Speed_SetArrayRandomMix(int size, int repeats) {
 	std::vector<int> perm;
 	for (int j = 0; (1<<j) < size; j++) {	//binary tree randomized BFS order
-		int k = perm.size();
+		int k = int(perm.size());
 		for (int i = 0; i < size; i += (1<<j))
 			perm.push_back(i);
 		std::random_shuffle(perm.begin() + k, perm.end());
@@ -257,7 +257,7 @@ template<class Container> double Speed_SetArrayRandomMix(int size, int repeats) 
 	for (int i = 0; i < repeats / 2; i++) {
 		Container cont;
 		cont.Reserve(size, 0);
-		for (size_t j = 0; j < perm.size(); j++)
+		for (int j = 0; j < int(perm.size()); j++)
 			cont.Set(perm[j], j*j);
 	}
 
@@ -267,7 +267,7 @@ template<class Container> double Speed_SetArrayRandomMix(int size, int repeats) 
 template<class Container> double Speed_SetIfNewArrayRandomMix(int size, int repeats) {
 	std::vector<int> perm;
 	for (int j = 0; (1<<j) < size; j++) {	//binary tree randomized BFS order
-		int k = perm.size();
+		int k = int(perm.size());
 		for (int i = 0; i < size; i += (1<<j))
 			perm.push_back(i);
 		std::random_shuffle(perm.begin() + k, perm.end());
@@ -278,7 +278,7 @@ template<class Container> double Speed_SetIfNewArrayRandomMix(int size, int repe
 	for (int i = 0; i < repeats / 2; i++) {
 		Container cont;
 		cont.Reserve(size, 0);
-		for (size_t j = 0; j < perm.size(); j++)
+		for (int j = 0; j < int(perm.size()); j++)
 			cont.SetIfNew(perm[j], j*j);
 	}
 
