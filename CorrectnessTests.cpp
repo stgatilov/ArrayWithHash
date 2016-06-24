@@ -4,6 +4,7 @@
 #include <vector>
 #include <numeric>
 #include <cstring>
+#include <cinttypes>
 
 //for leak detection
 //#include "vld.h"
@@ -28,8 +29,8 @@ template<> struct Getter<true> {
 	static void Do(Container &dict, Key key) { dict.Get(key); }
 };
 
-template<class Container, class Key>
-void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
+template<class Container>
+void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCount, int64_t minKey, int64_t maxKey, std::mt19937 &rnd) {
 	double allSum = std::accumulate(typeProbs.begin(), typeProbs.end(), 0.0);
 	std::string signature = "|";
 	for (size_t i = 0; i < typeProbs.size(); i++) {
@@ -45,7 +46,7 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 	}
 
 	if (!quietTests) {
-		printf("TestRandom<%s>: %d opers, keys in [%d, %d]\n", dict.label, operationsCount, minKey, maxKey);
+		printf("TestRandom<%s>: %d opers, keys in [%"PRId64", %"PRId64"]\n", dict.label, operationsCount, minKey, maxKey);
 		printf("    probs: %s\n", signature.c_str());
 		fflush(stdout);
 	}
@@ -60,14 +61,15 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 	prefSums.back() = 1e+50;
 
 	dict.assertLevel = assertLevel;
+	typedef Container::Key Key;
 	typedef Container::Value Value;
 
 	int doneOps = 0;
 	while (doneOps < operationsCount) {
 		double param = std::uniform_real_distribution<double>(0.0, 1.0)(rnd);
-		int type = std::lower_bound(prefSums.begin(), prefSums.end(), param) - prefSums.begin() - 1;
+		auto type = std::lower_bound(prefSums.begin(), prefSums.end(), param) - prefSums.begin() - 1;
 
-		Key key = std::uniform_int_distribution<Key>(minKey, maxKey)(rnd);
+		Key key = (Key)std::uniform_int_distribution<int64_t>(minKey, maxKey)(rnd);
 		Value value = ValueTestingUtils<Value>::Generate(rnd);
 
 		if (type == 0) {
@@ -95,8 +97,9 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 			dict.RemovePtr(dict.SomePtr(rnd));
 		}
 		else if (type == 7) {
-			int arrSz = std::uniform_int_distribution<int>(0, operationsCount)(rnd);
-			int hashSz = std::uniform_int_distribution<int>(0, operationsCount)(rnd);
+			int sizeCap = std::min(operationsCount, (int)std::numeric_limits<Key>::max() / 2);
+			int arrSz = std::uniform_int_distribution<int>(0, sizeCap)(rnd);
+			int hashSz = std::uniform_int_distribution<int>(0, sizeCap)(rnd);
 			int flag = std::uniform_int_distribution<int>(0, 1)(rnd);
 			dict.Reserve(arrSz, hashSz, flag == 0);
 		}
