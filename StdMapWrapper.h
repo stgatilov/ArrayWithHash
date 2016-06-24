@@ -38,7 +38,7 @@ public:
 		dict.clear();
 	}
 	inline Size GetSize() const {
-		return dict.size();
+		return (Size)dict.size();
 	}
 	inline Value Get(Key key) const {
 		Iter it = const_cast<Map&>(dict).find(key);
@@ -69,13 +69,13 @@ public:
 
 	template<class Action> void ForEach(Action action) const {
 		for (Iter it = const_cast<Map&>(dict).begin(); it != const_cast<Map&>(dict).end(); it++)
-			if (action(Key(it->first), it->second));
+			if (action(Key(it->first), it->second))
 				return;
 	}
 
 	//for testing only
 	template<class Rnd> Key SomeKey(Rnd &rnd) const {
-		int idx = std::uniform_int_distribution<int>(0, dict.size() - 1)(rnd);
+		size_t idx = std::uniform_int_distribution<size_t>(0, dict.size() - 1)(rnd);
 		typename Map::const_iterator iter = dict.begin();
 		std::advance(iter, idx);
 		return iter->first;
