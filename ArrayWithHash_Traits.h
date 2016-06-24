@@ -64,6 +64,19 @@ template<class Value> inline typename std::enable_if<std::is_pointer<Value>::val
 	return Value(size_t(0) - sizeof(Value));
 }
 
+//default relocation policy
+template<class Value> struct DefaultRelocationPolicy {
+#ifndef AWH_RELOCATE_DEFAULT
+	static const bool RELOCATE_WITH_MEMCPY = true;
+#else
+	static const bool RELOCATE_WITH_MEMCPY = AWH_RELOCATE_DEFAULT;
+#endif
+};
+#define AWH_SET_RELOCATE_WITH_MEMCPY(Value, policy) \
+template<> struct DefaultRelocationPolicy<Value> { \
+	static const bool RELOCATE_WITH_MEMCPY = policy; \
+};
+
 //Default traits of key type.
 //Note: you can subclass it and change EMPTY_KEY, REMOVED_KEY, hash function.
 template<class Key> struct DefaultKeyTraits {
@@ -85,7 +98,7 @@ template<class Key> struct DefaultKeyTraits {
 //Default traits of value type.
 //Note: you can subclass it and change its empty value.
 //Empty value is used for denoting empty elements in array.
-template<class Value> struct DefaultValueTraits {
+template<class Value> struct DefaultValueTraits : public DefaultRelocationPolicy<Value> {
 	//determines whether a given value is empty
 	static inline bool IsEmpty(const Value &value) {
 		return DefaultIsEmpty(value, 0);
@@ -96,5 +109,5 @@ template<class Value> struct DefaultValueTraits {
 	}
 	//is it ok to do memcpy for relocation?
 	//override to false in order to use std::move + destructor instead
-	static const bool RELOCATE_WITH_MEMCPY = true;
+	//static const bool RELOCATE_WITH_MEMCPY = true;	//inherited
 };

@@ -268,17 +268,20 @@ void TestsRound_SharedPtr(std::mt19937 &rnd) {
 //Note: std::string uses short-string optimization in GCC.
 //As a result, it is not trivially relocatable.
 //So we have to disable relocation with memcpy, otherwise it would crash.
-struct StringValueTraits : public DefaultValueTraits<std::string> {
+/*struct StringValueTraits : public DefaultValueTraits<std::string> {
 	static const bool RELOCATE_WITH_MEMCPY = false;
-};
+};*/
+AWH_SET_RELOCATE_WITH_MEMCPY(std::string, false)
 void TestsRound_String(std::mt19937 &rnd) {
 	
 	{
-		DECL_CONTAINER_X(int32_t, std::string, DefaultKeyTraits<int32_t>, StringValueTraits);
+//		DECL_CONTAINER_X(int32_t, std::string, DefaultKeyTraits<int32_t>, StringValueTraits);
+		DECL_CONTAINER(int32_t, std::string);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -100, 100, rnd);
 	}
 	{
-		DECL_CONTAINER_X(int32_t, std::string, DefaultKeyTraits<int32_t>, StringValueTraits);
+//		DECL_CONTAINER_X(int32_t, std::string, DefaultKeyTraits<int32_t>, StringValueTraits);
+		DECL_CONTAINER(int32_t, std::string);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -2000000000, 2000000000, rnd);
 	}
 }
