@@ -66,8 +66,15 @@ template<class Value> struct ValueTestingUtils<std::shared_ptr<Value>> : public 
 //Testing wrapper around both ArrayHash and StdMapWrapper.
 //It checks that all the outputs of all method calls are the same.
 //Used only for testing purposes
-template<class Key, class Value, class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>>
+template<class TKey, class TValue, class TKeyTraits = DefaultKeyTraits<TKey>, class TValueTraits = DefaultValueTraits<TValue>>
 class TestContainer {
+public:
+	typedef TKey Key;
+	typedef TValue Value;
+	typedef TKeyTraits KeyTraits;
+	typedef TValueTraits ValueTraits;
+
+private:
 	typedef ArrayWithHash<Key, Value, KeyTraits, ValueTraits> TArrayWithHash;
 	typedef StdMapWrapper<Key, Value, KeyTraits, ValueTraits> TStdMapWrapper;
 	typedef typename TStdMapWrapper::Ptr TPtr;
@@ -89,11 +96,6 @@ class TestContainer {
 	}
 
 public:
-	typedef Key Key;
-	typedef Value Value;
-	typedef KeyTraits KeyTraits;
-	typedef ValueTraits ValueTraits;
-
 	int assertLevel;
 	bool printCommands;
 	char label[256];

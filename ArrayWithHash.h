@@ -22,14 +22,20 @@ template<class Size> static inline bool IsHashFull(Size cfill, Size sz) {
 
 
 template<
-	class Key, class Value,
+	class TKey, class TValue,
 #ifndef AWH_NO_CPP11
-	class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>
+	class TKeyTraits = DefaultKeyTraits<TKey>, class TValueTraits = DefaultValueTraits<TValue>
 #else
-	class KeyTraits, class ValueTraits
+	class TKeyTraits, class TValueTraits
 #endif
 >
 class ArrayWithHash {
+	typedef TKey Key;
+	typedef TValue Value;
+	typedef TKeyTraits KeyTraits;
+	typedef TValueTraits ValueTraits;
+
+private:
 	typedef typename KeyTraits::Size Size;
 	static const Key EMPTY_KEY = KeyTraits::EMPTY_KEY;
 	static const Key REMOVED_KEY = KeyTraits::REMOVED_KEY;
@@ -354,11 +360,6 @@ class ArrayWithHash {
 	void operator= (const ArrayWithHash &iSource);
 
 public:
-	typedef Key Key;
-	typedef Value Value;
-	typedef KeyTraits KeyTraits;
-	typedef ValueTraits ValueTraits;
-
 	ArrayWithHash() {
 		Flush();
 	}

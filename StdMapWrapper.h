@@ -6,20 +6,23 @@
 
 //Wrapper aroung std::unordered_map (or std::map) with interface of ArrayHash.
 //Used mainly for comparison of ArrayHash with STL containers.
-template<class Key, class Value, class KeyTraits = DefaultKeyTraits<Key>, class ValueTraits = DefaultValueTraits<Value>>
+template<class TKey, class TValue, class TKeyTraits = DefaultKeyTraits<TKey>, class TValueTraits = DefaultValueTraits<TValue>>
 class StdMapWrapper {
+public:
+	typedef TKey Key;
+	typedef TValue Value;
+	typedef TKeyTraits KeyTraits;
+	typedef TValueTraits ValueTraits;
+
+private:
 //	typedef std::map<Key, Value> Map;
 	typedef std::unordered_map<Key, Value> Map;
 	typedef typename Map::iterator Iter;
 	typedef typename KeyTraits::Size Size;
 
 	Map dict;
-public:
-	typedef Key Key;
-	typedef Value Value;
-	typedef KeyTraits KeyTraits;
-	typedef ValueTraits ValueTraits;
 
+public:
 	struct Ptr {
 		bool null;
 		Iter it;

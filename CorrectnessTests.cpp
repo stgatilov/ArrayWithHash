@@ -46,7 +46,7 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 	}
 
 	if (!quietTests) {
-		printf("TestRandom<%s>: %d opers, keys in [%"PRId64", %"PRId64"]\n", dict.label, operationsCount, minKey, maxKey);
+		printf("TestRandom<%s>: %d opers, keys in [%" PRId64 ", %" PRId64 "]\n", dict.label, operationsCount, minKey, maxKey);
 		printf("    probs: %s\n", signature.c_str());
 		fflush(stdout);
 	}
@@ -61,8 +61,8 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 	prefSums.back() = 1e+50;
 
 	dict.assertLevel = assertLevel;
-	typedef Container::Key Key;
-	typedef Container::Value Value;
+	typedef typename Container::Key Key;
+	typedef typename Container::Value Value;
 
 	int doneOps = 0;
 	while (doneOps < operationsCount) {
