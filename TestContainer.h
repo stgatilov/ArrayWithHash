@@ -4,6 +4,7 @@
 #include "ArrayWithHash.h"
 #include "StdMapWrapper.h"
 #include <memory>
+#include <string>
 
 template<class Value> typename std::enable_if<std::is_integral<Value>::value, Value>::type
 UniDistrRandom(std::mt19937 &rnd) {
@@ -30,6 +31,9 @@ template<class Value> struct BaseValueTestingUtils {
 	static const Value &Content(const Value &a) {
 		return a;
 	}
+	static int64_t CheckSum(const Value &a) {
+		return (int64_t)Content(a);
+	}
 };
 
 template<class Value> struct ValueTestingUtils : public BaseValueTestingUtils<Value> {};
@@ -49,6 +53,9 @@ template<class Value> struct ValueTestingUtils<std::unique_ptr<Value>> {
 	static const Value &Content(const std::unique_ptr<Value> &a) {
 		return *a;
 	}
+	static int64_t CheckSum(const std::unique_ptr<Value> &a) {
+		return (int64_t)Content(a);
+	}
 };
 
 template<class Value> struct ValueTestingUtils<std::shared_ptr<Value>> : public BaseValueTestingUtils<std::shared_ptr<Value>> {
@@ -59,7 +66,26 @@ template<class Value> struct ValueTestingUtils<std::shared_ptr<Value>> : public 
 			return std::make_shared<Value>(ValueTestingUtils<Value>::Generate(rnd));
 	}
 	static size_t Content(const std::shared_ptr<Value> &a) {
-		return size_t(a.get())/* + size_t(*a)*/;
+		return size_t(a.get());
+	}
+	static int64_t CheckSum(const std::shared_ptr<Value> &a) {
+		return size_t(a.get()) + size_t(*a);
+	}
+};
+
+template<> struct ValueTestingUtils<std::string> : public BaseValueTestingUtils<std::string> {
+	static std::string Generate(std::mt19937 &rnd) {
+		int len = std::uniform_int_distribution<int>(1, 30)(rnd);
+		std::string res(len, 0);
+		for (int i = 0; i < len; i++)
+			res[i] = (char)std::uniform_int_distribution<int>(32, 126)(rnd);
+		return res;
+	}
+	static std::string Content(const std::string &a) {
+		return a;
+	}
+	static int64_t CheckSum(const std::string &a) {
+		return std::hash<std::string>()(a);
 	}
 };
 
@@ -186,7 +212,7 @@ public:
 	int64_t CalcCheckSum() const {
 		int64_t sum;
 		auto Add = [&sum](Key key, Value &value) -> bool {
-			sum += key * 10 + int64_t(TestUtils::Content(value));
+			sum += key * 10 + int64_t(TestUtils::CheckSum(value));
 			return false;
 		};
 		sum = 0;

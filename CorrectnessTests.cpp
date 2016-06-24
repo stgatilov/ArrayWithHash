@@ -236,7 +236,17 @@ void TestsRound_SharedPtr(std::mt19937 &rnd) {
 		DECL_CONTAINER(int32_t, std::shared_ptr<uint16_t>);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -2000000000, 2000000000, rnd);
 	}
+}
 
+void TestsRound_String(std::mt19937 &rnd) {
+	{
+		DECL_CONTAINER(int32_t, std::string);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -100, 100, rnd);
+	}
+	{
+		DECL_CONTAINER(int32_t, std::string);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -2000000000, 2000000000, rnd);
+	}
 }
 
 void TestsRound(std::mt19937 &rnd) {
@@ -245,4 +255,5 @@ void TestsRound(std::mt19937 &rnd) {
 	TestsRound_Real(rnd);
 	TestsRound_UniquePtr(rnd);
 	TestsRound_SharedPtr(rnd);
+	TestsRound_String(rnd);
 }
