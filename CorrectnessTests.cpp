@@ -12,6 +12,22 @@ bool quietTests = false;
 int assertLevel = 2;
 
 
+namespace std {
+	//Workaround for a bug in MSVC2013 compiler:
+	//http://stackoverflow.com/q/34135409/556899
+	template<class T> struct is_copy_constructible<std::unique_ptr<T>> : false_type {};
+};
+
+//ugly way to exclude for compilation on condition
+template<bool Enabled> struct Getter {
+	template<class Container, class Key>
+	static void Do(Container &dict, Key key) {}
+};
+template<> struct Getter<true> {
+	template<class Container, class Key>
+	static void Do(Container &dict, Key key) { dict.Get(key); }
+};
+
 template<class Container, class Key>
 void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCount, Key minKey, Key maxKey, std::mt19937 &rnd) {
 	double allSum = std::accumulate(typeProbs.begin(), typeProbs.end(), 0.0);
@@ -57,9 +73,10 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 		if (type == 0) {
 			dict.GetSize();
 		}
-/*		else if (type == 1) {
-			dict.Get(key);
-		}*/
+		else if (type == 1) {
+			//Note: excluded from compilation for e.g. unique_ptr
+			Getter<std::is_copy_constructible<Value>::value>::Do(dict, key);
+		}
 		else if (type == 2) {
 			dict.GetPtr(key);
 		}
