@@ -6,17 +6,20 @@
 #include <memory>
 
 template<class Value> typename std::enable_if<std::is_integral<Value>::value, Value>::type
-UniDistrRandom(Value minVal, Value maxVal, std::mt19937 &rnd) {
-	return std::uniform_int_distribution<Value>(minVal, maxVal)(rnd);
+UniDistrRandom(std::mt19937 &rnd) {
+  if (std::is_signed<Value>::value)
+	  return (Value)std::uniform_int_distribution<int>(-10000, 10000)(rnd);
+  else
+	  return (Value)std::uniform_int_distribution<int>(0, 20000)(rnd);
 }
 template<class Value> typename std::enable_if<std::is_floating_point<Value>::value, Value>::type
-UniDistrRandom(Value minVal, Value maxVal, std::mt19937 &rnd) {
-	return std::uniform_real_distribution<Value>(minVal, maxVal)(rnd);
+UniDistrRandom(std::mt19937 &rnd) {
+	return std::uniform_real_distribution<Value>(Value(-1e+5), Value(1e+5))(rnd);
 }
 
 template<class Value> struct BaseValueTestingUtils {
 	static Value Generate(std::mt19937 &rnd) {
-		return UniDistrRandom(Value(-10000), Value(10000), rnd);
+		return UniDistrRandom<Value>(rnd);
 	}
 	static Value Clone(const Value &src) {
 		return Value(src);
@@ -50,7 +53,7 @@ template<class Value> struct ValueTestingUtils<std::unique_ptr<Value>> {
 
 template<class Value> struct ValueTestingUtils<std::shared_ptr<Value>> : public BaseValueTestingUtils<std::shared_ptr<Value>> {
 	static std::shared_ptr<Value> Generate(std::mt19937 &rnd) {
-		if (UniDistrRandom(0, 1, rnd))
+		if (std::uniform_int_distribution<int>(0, 1)(rnd))
 			return std::shared_ptr<Value>(new Value(ValueTestingUtils<Value>::Generate(rnd)));
 		else
 			return std::make_shared<Value>(ValueTestingUtils<Value>::Generate(rnd));
