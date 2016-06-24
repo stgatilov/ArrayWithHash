@@ -166,6 +166,18 @@ void TestsRound_Int32(std::mt19937 &rnd) {
 	}
 }
 
+void TestsRound_Real(std::mt19937 &rnd) {
+	{
+		DECL_CONTAINER(int32_t, double);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -2000000000, 2000000000, rnd);
+	}
+	{
+		DECL_CONTAINER(int32_t, float);
+		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
+	}
+}
+
 void TestsRound_UniquePtr(std::mt19937 &rnd) {
 	{
 		DECL_CONTAINER(int32_t, std::unique_ptr<int32_t>);
@@ -179,5 +191,6 @@ void TestsRound_UniquePtr(std::mt19937 &rnd) {
 
 void TestsRound(std::mt19937 &rnd) {
 	TestsRound_Int32(rnd);
+	TestsRound_Real(rnd);
 	TestsRound_UniquePtr(rnd);
 }

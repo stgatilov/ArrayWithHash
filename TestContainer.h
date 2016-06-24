@@ -63,6 +63,8 @@ class TestContainer {
 	TStdMapWrapper check;
 
 	static inline bool Same(const Value &a, const Value &b) {
+		if (ValueTraits::IsEmpty(a) && ValueTraits::IsEmpty(b))
+			return true;
 		return TestUtils::AreEqual(a, b);
 	}
 	static inline bool Same(Value *a, TPtr b) {
