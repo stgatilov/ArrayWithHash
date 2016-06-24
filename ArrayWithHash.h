@@ -395,7 +395,7 @@ public:
 	void Clear() {
 		if (arraySize && arrayCount) {
 			for (Size i = 0; i < arraySize; i++)
-				new (&arrayValues[i]) Value(ValueTraits::GetEmpty());
+				arrayValues[i] = AWH_MOVE(ValueTraits::GetEmpty());
 		}
 		if (hashSize && hashFill) {
 			DestroyAllHashValues();
