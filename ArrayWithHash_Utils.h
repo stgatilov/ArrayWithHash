@@ -38,14 +38,14 @@ template<class Size> Size log2up(Size sz) {
 		unsigned long pos;
 		if (!_BitScanReverse(&pos, (unsigned long)sz))		//bsr
 			pos = -1;		//branchless
-		return uint32_t(pos) + 1;
+		return uint32_t((long)pos) + 1;
 	}
 	#if defined(_M_X64)
 	inline uint64_t log2size(uint64_t sz) {
 		unsigned long pos;
 		if (!_BitScanReverse64(&pos, (unsigned __int64)sz))
 			pos = -1;
-		return uint64_t(pos) + 1;
+		return uint64_t((long)pos) + 1;
 	}
 	#endif
 #elif __GNUC__
