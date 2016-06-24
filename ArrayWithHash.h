@@ -316,7 +316,7 @@ class ArrayWithHash {
 	}
 
 	void HashRemovePtr(Value *ptr) {
-		Size cell = ptr - &hashValues[0];
+		size_t cell = ptr - &hashValues[0];
 		assert(hashKeys[cell] != EMPTY_KEY && hashKeys[cell] != REMOVED_KEY);
 		hashKeys[cell] = REMOVED_KEY;
 		hashCount--;
@@ -502,7 +502,7 @@ public:
 		if (InArray(ptr))
 			return Key(ptr - arrayValues);
 		else {
-			Size cell = ptr - hashValues;
+			size_t cell = ptr - hashValues;
 			return hashKeys[cell];
 		}
 	}
@@ -510,9 +510,9 @@ public:
 	//force to allocate memory for at least given amount of elements (separately for array and hash parts)
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 		if (arraySizeLB || arraySize)
-			arraySizeLB = std::max(Size(1) << log2up(arraySizeLB), std::max(arraySize, (Size)ARRAY_MIN_SIZE));
+			arraySizeLB = std::max(Size(Size(1) << log2up(arraySizeLB)), std::max(arraySize, (Size)ARRAY_MIN_SIZE));
 		if (hashSizeLB  ||  hashSize)
-			hashSizeLB  = std::max(Size(1) << log2up( hashSizeLB), std::max( hashSize, (Size) HASH_MIN_SIZE));
+			hashSizeLB  = std::max(Size(Size(1) << log2up( hashSizeLB)), std::max( hashSize, (Size) HASH_MIN_SIZE));
 		if (arraySizeLB == arraySize && hashSizeLB == hashSize && !alwaysCleanHash)
 			return;
 		Reallocate(arraySizeLB, hashSizeLB);
