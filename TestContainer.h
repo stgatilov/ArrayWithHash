@@ -89,6 +89,17 @@ template<> struct ValueTestingUtils<std::string> : public BaseValueTestingUtils<
 	}
 };
 
+template<class Value> struct ValueTestingUtils<Value*> : public BaseValueTestingUtils<Value*> {
+	typedef typename std::conditional<std::is_same<Value, void>::value, char, Value>::type Elem;
+	static Elem *GetBuffer() {
+		static Elem tmp_buffer[10000];
+		return tmp_buffer;
+	}
+	static Value *Generate(std::mt19937 &rnd) {
+		return &GetBuffer()[std::uniform_int_distribution<int>(0, 9999)(rnd)];
+	}
+};
+
 //Testing wrapper around both ArrayHash and StdMapWrapper.
 //It checks that all the outputs of all method calls are the same.
 //Used only for testing purposes
