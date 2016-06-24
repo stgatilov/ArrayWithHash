@@ -5,10 +5,18 @@
 #include "StdMapWrapper.h"
 #include <memory>
 
+template<class Value> typename std::enable_if<std::is_integral<Value>::value, Value>::type
+UniDistrRandom(Value minVal, Value maxVal, std::mt19937 &rnd) {
+	return std::uniform_int_distribution<Value>(minVal, maxVal)(rnd);
+}
+template<class Value> typename std::enable_if<std::is_floating_point<Value>::value, Value>::type
+UniDistrRandom(Value minVal, Value maxVal, std::mt19937 &rnd) {
+	return std::uniform_real_distribution<Value>(minVal, maxVal)(rnd);
+}
 
 template<class Value> struct BaseValueTestingUtils {
 	static Value Generate(std::mt19937 &rnd) {
-		return std::uniform_int_distribution<Value>(Value(-10000), Value(10000))(rnd);
+		return UniDistrRandom(Value(-10000), Value(10000), rnd);
 	}
 	static Value Clone(const Value &src) {
 		return Value(src);
@@ -22,6 +30,7 @@ template<class Value> struct BaseValueTestingUtils {
 };
 
 template<class Value> struct ValueTestingUtils : public BaseValueTestingUtils<Value> {};
+
 template<class Value> struct ValueTestingUtils<std::unique_ptr<Value>> {
 	std::unique_ptr<Value> operator() (std::mt19937 &rnd) const {
 	}
@@ -70,9 +79,10 @@ public:
 
 	int assertLevel;
 	bool printCommands;
-	TestContainer(int lvl = 2) {
+	char label[256];
+	TestContainer() {
 		//change in order to trade speed for internal checks verbosity
-		assertLevel = lvl;
+		assertLevel = 2;
 		//chenge to true if you want to see a problematic test
 		printCommands = false;
 	}
@@ -157,7 +167,7 @@ public:
 	int64_t CalcCheckSum() const {
 		int64_t sum;
 		auto Add = [&sum](Key key, Value &value) -> bool {
-			sum += key * 10 + TestUtils::Content(value);
+			sum += key * 10 + int64_t(TestUtils::Content(value));
 			return false;
 		};
 		sum = 0;

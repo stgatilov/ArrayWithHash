@@ -45,8 +45,8 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 	}
 
 	if (!quietTests) {
-		printf("TestRandom: %d opers, keys in [%d, %d]\n", operationsCount, minKey, maxKey);
-		printf("     probs: %s\n", signature.c_str());
+		printf("TestRandom<%s>: %d opers, keys in [%d, %d]\n", dict.label, operationsCount, minKey, maxKey);
+		printf("    probs: %s\n", signature.c_str());
 		fflush(stdout);
 	}
 
@@ -120,55 +120,59 @@ void TestRandom(Container &dict, std::vector<double> typeProbs, int operationsCo
 	}
 }
 
+#define DECL_CONTAINER(Key, Value) \
+	TestContainer<Key, Value> dict; \
+	sprintf(dict.label, "%s->%s", #Key, #Value);
+
 void TestsRound_Int32(std::mt19937 &rnd) {
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01, 0.01, 0.01, 0.01}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 2000, -100, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, 0, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1}, 1000, -50, 50, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 50, 50, 1, 1, 1, 1, 1}, 1000, -10, 10, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, -100, 100, rnd);
 		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, -120, 120, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 0, 100, rnd);
 		TestRandom(dict, {0, 1, 1, 1, 1, 0.1, 0.01, 0}, 1000, 100, 300, rnd);
 		TestRandom(dict, {0, 1, 1, 1, 1, 1, 1, 0}, 1000, 0, 500, rnd);
 	}
 	{
-		TestContainer<int32_t, int32_t> dict;
+		DECL_CONTAINER(int32_t, int32_t);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
 	}
 }
 
 void TestsRound_UniquePtr(std::mt19937 &rnd) {
 	{
-		TestContainer<int32_t, std::unique_ptr<int32_t>> dict;
+		DECL_CONTAINER(int32_t, std::unique_ptr<int32_t>);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 1000, -100, 100, rnd);
 	}
 	{
-		TestContainer<int32_t, std::unique_ptr<int32_t>> dict;
+		DECL_CONTAINER(int32_t, std::unique_ptr<int32_t>);
 		TestRandom(dict, {1, 1, 1, 1, 1, 1, 1, 0.01}, 1000, -2000000000, 2000000000, rnd);
 	}
 }
