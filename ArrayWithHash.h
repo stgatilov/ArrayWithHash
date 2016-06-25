@@ -149,7 +149,7 @@ private:
 	void RelocateArrayPart(Size &newArraySize) {
 		Value *newArrayValues;
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
-			newArrayValues = (Value*) realloc(arrayValues, size_t(newArraySize * sizeof(Value)));
+			newArrayValues = (Value*) realloc(arrayValues, size_t(newArraySize) * sizeof(Value));
 		else {
 			newArrayValues = AllocateBuffer<Value>(newArraySize);
 			RelocateMany(newArrayValues, arrayValues, arraySize);
