@@ -51,10 +51,10 @@ private:
 	template<class Elem> static Elem* AllocateBuffer(Size elemCount) {
 		if (elemCount == 0)
 			return NULL;
-		return (Elem*) operator new (size_t(elemCount * sizeof(Elem)));
+		return (Elem*) malloc (size_t(elemCount * sizeof(Elem)));
 	}
 	template<class Elem> static void DeallocateBuffer(Elem *buffer) {
-		operator delete (buffer);
+		free(buffer);
 	}
 
 	static inline void RelocateOne(Value &dst, Value &src) {
@@ -147,10 +147,14 @@ private:
 	}
 
 	void RelocateArrayPart(Size &newArraySize) {
-		Value *newArrayValues = AllocateBuffer<Value>(newArraySize);
-		//Note: trivial relocation
-		RelocateMany(newArrayValues, arrayValues, arraySize);
-		DeallocateBuffer<Value>(arrayValues);
+		Value *newArrayValues;
+		if (ValueTraits::RELOCATE_WITH_MEMCPY)
+			newArrayValues = (Value*) realloc(arrayValues, size_t(newArraySize * sizeof(Value)));
+		else {
+			newArrayValues = AllocateBuffer<Value>(newArraySize);
+			RelocateMany(newArrayValues, arrayValues, arraySize);
+			DeallocateBuffer<Value>(arrayValues);
+		}
 		for (Value *ptr = newArrayValues + arraySize; ptr < newArrayValues + newArraySize; ptr++)
 			new (ptr) Value(ValueTraits::GetEmpty());
 
