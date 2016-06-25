@@ -72,6 +72,7 @@ template<class Value> struct DefaultRelocationPolicy {
 	static const bool RELOCATE_WITH_MEMCPY = AWH_RELOCATE_DEFAULT;
 #endif
 };
+//call this macro to mark a class as trivially relocatable (or not)
 #define AWH_SET_RELOCATE_WITH_MEMCPY(Value, policy) \
 template<> struct DefaultRelocationPolicy<Value> { \
 	static const bool RELOCATE_WITH_MEMCPY = policy; \
