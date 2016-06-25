@@ -2,8 +2,10 @@
 
 #include <stddef.h>
 #include <assert.h>
+#include <string.h>
 #include <algorithm>
 #include <set>
+#include <memory>
 
 #include "ArrayWithHash_Utils.h"
 #ifndef AWH_NO_CPP11
@@ -372,6 +374,7 @@ public:
 		DeallocateBuffer<Key>(hashKeys);
 	}
 
+#ifndef AWH_NO_CPP11
 	ArrayWithHash(ArrayWithHash &&iSource) {
 		RelocateFrom(iSource);
 		iSource.Flush();
@@ -380,6 +383,7 @@ public:
 		RelocateFrom(iSource);
 		iSource.Flush();
 	}
+#endif
 
 	void Swap(ArrayWithHash &other) {
 		std::swap(arraySize, other.arraySize);
