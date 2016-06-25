@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <type_traits>
-#include <limits>
 
 //helper for hacking with floats representation
 template<int bytes> struct IntegerBySize {};
@@ -40,11 +39,11 @@ Value DefaultGetEmpty(void*) {
 //default empty value for integers: maximal representable
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_integral<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
-	return value == std::numeric_limits<Value>::max();
+	return value == IntegerMaxValue<Value>::max;
 }
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_integral<Value>::value, Value>::type DefaultGetEmpty(int) {
-	return std::numeric_limits<Value>::max();
+	return IntegerMaxValue<Value>::max;
 }
 //default empty value for floats: NaN with all bits set
 template<class Value> static AWH_INLINE
