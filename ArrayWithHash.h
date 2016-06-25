@@ -4,8 +4,10 @@
 #include <assert.h>
 #include <string.h>
 #include <algorithm>
-#include <set>
 #include <memory>
+#ifdef AWH_TESTING
+#include <set>
+#endif
 
 #include "ArrayWithHash_Utils.h"
 #ifndef AWH_NO_CPP11
@@ -545,6 +547,7 @@ public:
 					return;
 	}
 
+#ifdef AWH_TESTING
 	//internal method: checks all the invariants of the container
 	//it is not called from anywhere (except tests), and you should not call it too
 	AWH_NOINLINE bool AssertCorrectness(int verbosity = 2) const {
@@ -607,6 +610,7 @@ public:
 		}
 		return true;
 	}
+#endif
 };
 
 //make sure std::swap works via Swap method
