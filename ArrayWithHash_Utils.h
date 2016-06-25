@@ -65,5 +65,18 @@ template<class Size> Size log2up(Size sz) {
 	}
 	#endif
 #endif
+#if (_MSC_VER >= 1600 || __GNUC__) && !(defined(_M_X64) || defined(__amd64__))
+	inline uint64_t log2size(uint64_t sz) {
+		union {
+			struct { uint32_t low, high; };
+			uint64_t both;
+		};
+		both = sz;
+		uint32_t highRes = log2size(high);
+		uint32_t lowRes = log2size(low);
+		return highRes == 0 ? lowRes : highRes + 32;
+	}
+#endif
+
 inline uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz)); }
 inline uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
