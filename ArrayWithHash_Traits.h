@@ -3,31 +3,48 @@
 #include <stdint.h>
 #include <type_traits>
 
-//helper for hacking with floats representation
+//getting integer type by its size in bytes
+//used for hacking with floats representation
 template<int bytes> struct IntegerBySize {};
 template<> struct IntegerBySize<4> { typedef int32_t sint; };
 template<> struct IntegerBySize<8> { typedef int64_t sint; };
-//workaround for compile-time constant max values of integers
+
+//getting maximal representable value for given integer type
+//generally, it is equivalent to std::numeric_limits<type>::max()
+//but it gives a compile-time constant
 template<class type> struct IntegerMaxValue {
 	static const int bits = 8 * sizeof(type) - (1 + std::is_signed<type>::value);
 	static const type max = (type(1) << bits) - 1 + (type(1) << bits);
 };
 
-//default hash function by Knuth: http://stackoverflow.com/a/665545/556899
+//=======================================================================
+//Default hash function is defined here.
+//Trivial implementation is chosen to improve code size and performance.
+
+//for 32-bit integers, introduced by Knuth:
+// http://stackoverflow.com/a/665545/556899
 static AWH_INLINE uint32_t DefaultHashFunction(uint32_t key) {
 	return 2654435761U * key;
 }
+//analogous hash function for 64-bit integers
 static AWH_INLINE uint64_t DefaultHashFunction(uint64_t key) {
 	return 11400714819323198485ULL * key;
 }
+//32-bit version is used for integers of smaller size
 static AWH_INLINE uint16_t DefaultHashFunction(uint16_t key) { return DefaultHashFunction(uint32_t(key)); }
 static AWH_INLINE uint8_t  DefaultHashFunction(uint8_t  key) { return DefaultHashFunction(uint32_t(key)); }
+//signed integers are treated as unsigned ones
 static AWH_INLINE uint64_t DefaultHashFunction( int64_t key) { return DefaultHashFunction(uint64_t(key)); }
 static AWH_INLINE uint32_t DefaultHashFunction( int32_t key) { return DefaultHashFunction(uint32_t(key)); }
 static AWH_INLINE uint16_t DefaultHashFunction( int16_t key) { return DefaultHashFunction(uint16_t(key)); }
 static AWH_INLINE uint8_t  DefaultHashFunction( int8_t  key) { return DefaultHashFunction(uint8_t (key)); }
 
-//default empty value for custom types: default constructed instance
+//=======================================================================
+//Here the value treated as the EMPTY one (by default) is defined.
+//These functions are called from DefaultValueTraits (see below).
+
+//for custom types, EMPTY = default constructed instance
+//examples include: std::vector, std::unique_ptr, std::shared_ptr, std::string
 template<class Value> inline
 bool DefaultIsEmpty(const Value &value, void*) {
 	return value == Value();
@@ -36,7 +53,11 @@ template<class Value> inline
 Value DefaultGetEmpty(void*) {
 	return Value();
 }
-//default empty value for integers: maximal representable
+
+//all the other versions are specialized using SFINAE
+//they have higher priority in overload resolution thanks to helper argument
+
+//for integers: EMPTY = maximal representable value
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_integral<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
 	return value == IntegerMaxValue<Value>::max;
@@ -45,7 +66,11 @@ template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_integral<Value>::value, Value>::type DefaultGetEmpty(int) {
 	return IntegerMaxValue<Value>::max;
 }
-//default empty value for floats: NaN with all bits set
+
+//for floats: EMPTY = NaN with all set bits (e.g. 0xFFFFFFFF for float)
+//this is the most fitting choice, but it has several issues:
+// 1. separate IsEmpty function is required, since NaNs are not equal to each other
+// 2. it may be unsafe: implementation is allowed to change NaN's representation even on copy
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_floating_point<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
 	typedef typename IntegerBySize<sizeof Value>::sint Int;
@@ -61,9 +86,12 @@ typename std::enable_if<std::is_floating_point<Value>::value, Value>::type Defau
 	integer = Int(-1);
 	return value;
 }
-//default empty value for raw pointers: maximal well-aligned pointer
+
+//for raw pointers: maximal properly-aligned pointer 
+//e.g. 0xFFFFFFFF for char*, 0xFFFFFFF8 for double*
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_pointer<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
+	//Note: sizeof(void) is undefined, but usually equals 1 =)
 	return size_t(value) == (size_t(0) - sizeof(Value));
 }
 template<class Value> static AWH_INLINE
@@ -71,7 +99,20 @@ typename std::enable_if<std::is_pointer<Value>::value, Value>::type DefaultGetEm
 	return Value(size_t(0) - sizeof(Value));
 }
 
-//default relocation policy
+//=======================================================================
+//Flag "relocate with memcpy" is controlled here on global level.
+//
+//It should be defined only for trivially relocatable types:
+//  http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0023r0.pdf
+//When enabled, it makes array growth much faster: realloc is used.
+//
+//It is enabled for all value types by default.
+//There are three ways to disable it:
+//  For all types: define macro AWH_RELOCATE_DEFAULT to false
+//  For single type: write AWH_SET_RELOCATE_WITH_MEMCPY(ValueType, false)
+//  For single object: use your own ValueTraits with RELOCATE_WITH_MEMCPY = false
+
+//global value of the flag
 template<class Value> struct DefaultRelocationPolicy {
 #ifndef AWH_RELOCATE_DEFAULT
 	static const bool RELOCATE_WITH_MEMCPY = true;
@@ -79,11 +120,13 @@ template<class Value> struct DefaultRelocationPolicy {
 	static const bool RELOCATE_WITH_MEMCPY = AWH_RELOCATE_DEFAULT;
 #endif
 };
-//call this macro to mark a class as trivially relocatable (or not)
+//use this macro to set the per-type value of the flag
 #define AWH_SET_RELOCATE_WITH_MEMCPY(Value, policy) \
 template<> struct DefaultRelocationPolicy<Value> { \
 	static const bool RELOCATE_WITH_MEMCPY = policy; \
 };
+
+//=======================================================================
 
 //Default traits of key type.
 //Note: you can subclass it and change EMPTY_KEY, REMOVED_KEY, hash function.
@@ -92,7 +135,6 @@ template<class Key> struct DefaultKeyTraits {
 	typedef typename std::make_unsigned<Key>::type Size;
 
 	//special value of Key: denotes empty cell in hash table
-	//static const Key EMPTY_KEY = std::numeric_limits<Key>::max();
 	static const Key EMPTY_KEY = IntegerMaxValue<Key>::max;
 	//special value of Key: denotes removed cell in hash table
 	static const Key REMOVED_KEY = EMPTY_KEY - 1;
