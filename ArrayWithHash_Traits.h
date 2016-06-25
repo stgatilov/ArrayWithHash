@@ -5,9 +5,9 @@
 #include <limits>
 
 //helper for hacking with floats representation
-template<class type> struct EquallySizedInteger {};
-template<> struct EquallySizedInteger<float> { typedef int32_t sint; };
-template<> struct EquallySizedInteger<double> { typedef int64_t sint; };
+template<int bytes> struct IntegerBySize {};
+template<> struct IntegerBySize<4> { typedef int32_t sint; };
+template<> struct IntegerBySize<8> { typedef int64_t sint; };
 //workaround for compile-time constant max values of integers
 template<class type> struct IntegerMaxValue {
 	static const int bits = 8 * sizeof(type) - (1 + std::is_signed<type>::value);
@@ -49,12 +49,12 @@ typename std::enable_if<std::is_integral<Value>::value, Value>::type DefaultGetE
 //default empty value for floats: NaN with all bits set
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_floating_point<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
-	typedef typename EquallySizedInteger<Value>::sint Int;
+	typedef typename IntegerBySize<sizeof Value>::sint Int;
 	return *(Int*)&value == (Int)-1;
 }
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_floating_point<Value>::value, Value>::type DefaultGetEmpty(int) {
-	typedef typename EquallySizedInteger<Value>::sint Int;
+	typedef typename IntegerBySize<sizeof Value>::sint Int;
 	union  {
 		Value value;
 		Int integer;
