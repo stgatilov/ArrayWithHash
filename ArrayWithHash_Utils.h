@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 //for testing purposes and for method AssertCorrectness
 #define AWH_ASSERT_ALWAYS(expr) { \

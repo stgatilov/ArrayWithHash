@@ -1,8 +1,8 @@
 #pragma once
 
-#include <cstddef>
+#include <stddef.h>
+#include <assert.h>
 #include <algorithm>
-#include <cassert>
 #include <set>
 
 #include "ArrayWithHash_Utils.h"

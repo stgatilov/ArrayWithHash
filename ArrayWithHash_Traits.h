@@ -1,7 +1,7 @@
 #pragma once
 
+#include <stdint.h>
 #include <type_traits>
-#include <cstdint>
 #include <limits>
 
 //helper for hacking with floats representation
