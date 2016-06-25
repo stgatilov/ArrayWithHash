@@ -18,7 +18,7 @@ static const double HASH_MIN_FILL = 0.30;
 static const double HASH_MAX_FILL = 0.75;
 static const size_t ARRAY_MIN_SIZE = 8;
 static const size_t HASH_MIN_SIZE = 8;
-template<class Size> static inline bool IsHashFull(Size cfill, Size sz) {
+template<class Size> static AWH_INLINE bool IsHashFull(Size cfill, Size sz) {
 	return cfill >= ((sz >> 2) * 3);
 }
 
@@ -57,7 +57,7 @@ private:
 		free(buffer);
 	}
 
-	static inline void RelocateOne(Value &dst, Value &src) {
+	static AWH_INLINE void RelocateOne(Value &dst, Value &src) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(&dst, &src, sizeof(Value));
 		else {
@@ -65,7 +65,7 @@ private:
 			src.~Value();
 		}
 	}
-	static inline void RelocateMany(Value *dst, Value *src, Size cnt) {
+	static void RelocateMany(Value *dst, Value *src, Size cnt) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(dst, src, size_t(cnt) * sizeof(Value));
 		else {
@@ -76,22 +76,22 @@ private:
 		}
 	}
 
-	inline bool InArray(Key key) const {
+	AWH_INLINE bool InArray(Key key) const {
 		return Size(key) < arraySize;
 	}
-	inline bool InArray(Value *ptr) const {
+	AWH_INLINE bool InArray(Value *ptr) const {
 		size_t offset = (char*)ptr - (char*)arrayValues;
 		return offset < size_t(arraySize) * sizeof(Value);
 	}
 
-	Size FindCellEmpty(Key key) const {
+	AWH_INLINE Size FindCellEmpty(Key key) const {
 		assert(hashSize);
 		Size cell = KeyTraits::HashFunction(key) & (hashSize - 1);
 		while (hashKeys[cell] != EMPTY_KEY)
 			cell = (cell + 1) & (hashSize - 1);
 		return cell;
 	}
-	Size FindCellKeyOrEmpty(Key key) const {
+	AWH_INLINE Size FindCellKeyOrEmpty(Key key) const {
 		assert(hashSize);
 		Size cell = KeyTraits::HashFunction(key) & (hashSize - 1);
 		while (hashKeys[cell] != EMPTY_KEY && hashKeys[cell] != key)
@@ -99,7 +99,7 @@ private:
 		return cell;
 	}
 
-	void AdaptSizes(Key newKey) {
+	AWH_NOINLINE void AdaptSizes(Key newKey) {
 		static const int BITS = sizeof(Size) * 8;
 		Size logHisto[BITS + 1] = {0};
 		Size logArraySize = log2up(arraySize);
@@ -146,7 +146,7 @@ private:
 		Reallocate(newArraySize, newHashSize);
 	}
 
-	void RelocateArrayPart(Size &newArraySize) {
+	AWH_NOINLINE void RelocateArrayPart(Size &newArraySize) {
 		Value *newArrayValues;
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			newArrayValues = (Value*) realloc(arrayValues, size_t(newArraySize) * sizeof(Value));
@@ -162,7 +162,7 @@ private:
 		std::swap(arraySize, newArraySize);
 	}
 
-	template<bool RELOC_ARRAY> void RelocateHashInPlace(Size newArraySize) {
+	template<bool RELOC_ARRAY> AWH_NOINLINE void RelocateHashInPlace(Size newArraySize) {
 		//relocate array if required
 		if (RELOC_ARRAY)
 			RelocateArrayPart(newArraySize);
@@ -209,7 +209,7 @@ private:
 		hashFill = hashCount;
 	}
 
-	template<bool RELOC_ARRAY> void RelocateHashToNew(Size newHashSize, Size newArraySize) {
+	template<bool RELOC_ARRAY> AWH_NOINLINE void RelocateHashToNew(Size newHashSize, Size newArraySize) {
 		//relocate array if required
 		if (RELOC_ARRAY)
 			RelocateArrayPart(newArraySize);
@@ -253,7 +253,7 @@ private:
 		hashFill = hashCount;
 	}
 
-	void Reallocate(Size newArraySize, Size newHashSize) {
+	AWH_NOINLINE void Reallocate(Size newArraySize, Size newHashSize) {
 		assert(newArraySize >= arraySize && newHashSize >= hashSize);
 
 		if (newHashSize == hashSize) {
@@ -271,21 +271,21 @@ private:
 	}
 
 
-	Value HashGet(Key key) const {
+	AWH_NOINLINE Value HashGet(Key key) const {
 		if (hashSize == 0)
 			return ValueTraits::GetEmpty();
 		Size cell = FindCellKeyOrEmpty(key);
 		return hashKeys[cell] == EMPTY_KEY ? ValueTraits::GetEmpty() : hashValues[cell];
 	}
 
-	Value *HashGetPtr(Key key) const {
+	AWH_NOINLINE Value *HashGetPtr(Key key) const {
 		if (hashSize == 0)
 			return NULL;
 		Size cell = FindCellKeyOrEmpty(key);
 		return hashKeys[cell] == EMPTY_KEY ? NULL : &hashValues[cell];
 	}
 
-	Value *HashSet(Key key, Value value) {
+	AWH_NOINLINE Value *HashSet(Key key, Value value) {
 		if (IsHashFull(hashFill, hashSize)) {
 			AdaptSizes(key);
 			return Set(key, AWH_MOVE(value));
@@ -301,7 +301,7 @@ private:
 		return &hashValues[cell];
 	}
 
-	Value *HashSetIfNew(Key key, Value value) {
+	AWH_NOINLINE Value *HashSetIfNew(Key key, Value value) {
 		if (IsHashFull(hashFill, hashSize)) {
 			AdaptSizes(key);
 			return SetIfNew(key, AWH_MOVE(value));
@@ -316,7 +316,7 @@ private:
 		return NULL;
 	}
 
-	void HashRemove(Key key) {
+	AWH_NOINLINE void HashRemove(Key key) {
 		if (hashSize == 0)
 			return;
 		Size cell = FindCellKeyOrEmpty(key);
@@ -327,7 +327,7 @@ private:
 		hashValues[cell].~Value();
 	}
 
-	void HashRemovePtr(Value *ptr) {
+	AWH_NOINLINE void HashRemovePtr(Value *ptr) {
 		size_t cell = ptr - &hashValues[0];
 		assert(hashKeys[cell] != EMPTY_KEY && hashKeys[cell] != REMOVED_KEY);
 		hashKeys[cell] = REMOVED_KEY;
@@ -335,7 +335,7 @@ private:
 		hashValues[cell].~Value();
 	}
 
-	inline void Flush() {
+	AWH_INLINE void Flush() {
 		arraySize = 0;
 		hashSize = 0;
 		arrayCount = 0;
@@ -345,7 +345,7 @@ private:
 		hashValues = NULL;
 		hashKeys = NULL;
 	}
-	inline void RelocateFrom(const ArrayWithHash &iSource) {
+	AWH_INLINE void RelocateFrom(const ArrayWithHash &iSource) {
 		arraySize = iSource.arraySize;
 		hashSize = iSource.hashSize;
 		arrayCount = iSource.arrayCount;
@@ -355,7 +355,7 @@ private:
 		hashValues = iSource.hashValues;
 		hashKeys = iSource.hashKeys;
 	}
-	void DestroyAllHashValues() {
+	AWH_INLINE void DestroyAllHashValues() {
 		for (Size i = 0; i < hashSize; i++)
 			if (hashKeys[i] != EMPTY_KEY && hashKeys[i] != REMOVED_KEY)
 				hashValues[i].~Value();
@@ -369,7 +369,7 @@ public:
 	ArrayWithHash() {
 		Flush();
 	}
-	~ArrayWithHash() {
+	AWH_NOINLINE ~ArrayWithHash() {
 		for (Size i = 0; i < arraySize; i++)
 			arrayValues[i].~Value();
 		DestroyAllHashValues();
@@ -403,7 +403,7 @@ public:
 	}
 
 	//remove all elements without shrinking
-	void Clear() {
+	AWH_NOINLINE void Clear() {
 		if (arraySize && arrayCount) {
 			for (Size i = 0; i < arraySize; i++)
 				arrayValues[i] = AWH_MOVE(ValueTraits::GetEmpty());
@@ -415,14 +415,14 @@ public:
 		arrayCount = hashCount = hashFill = 0;
 	}
 
-	inline Size GetSize() const {
+	AWH_INLINE Size GetSize() const {
 		return arrayCount + hashCount;
 	}
 
 	//return value for given key
 	//or "empty" value if not present
 	//Note: requires Value type to be copyable
-	inline Value Get(Key key) const {
+	AWH_INLINE Value Get(Key key) const {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key))
 			return arrayValues[key];
@@ -432,7 +432,7 @@ public:
 
 	//returns pointer to the value for given key
 	//or NULL if not present
-	inline Value *GetPtr(Key key) const {
+	AWH_INLINE Value *GetPtr(Key key) const {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
@@ -445,7 +445,7 @@ public:
 	//sets value associated with given key
 	//key is inserted if not present before
 	//returns pointer to the updated/inserted value
-	inline Value *Set(Key key, Value value) {
+	AWH_INLINE Value *Set(Key key, Value value) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		assert(!ValueTraits::IsEmpty(value));
 		if (InArray(key)) {
@@ -460,7 +460,7 @@ public:
 
 	//if key is present, then returns pointer to it
 	//otherwise adds a new key with associated value, and returns NULL
-	inline Value *SetIfNew(Key key, Value value) {
+	AWH_INLINE Value *SetIfNew(Key key, Value value) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		assert(!ValueTraits::IsEmpty(value));
 		if (InArray(key)) {
@@ -485,7 +485,7 @@ public:
 	}
 
 	//removes given key (if present)
-	inline void Remove(Key key) {
+	AWH_INLINE void Remove(Key key) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key)) {
 			Value &val = arrayValues[key];
@@ -497,7 +497,7 @@ public:
 	}
 
 	//removes key specified by pointer to its value
-	inline void RemovePtr(Value *ptr) {
+	AWH_INLINE void RemovePtr(Value *ptr) {
 		assert(ptr);
 		assert(!ValueTraits::IsEmpty(*ptr));
 		if (InArray(ptr)) {
@@ -509,7 +509,7 @@ public:
 	}
 
 	//returns key for the given value
-	inline Key KeyOf(Value *ptr) const {
+	AWH_INLINE Key KeyOf(Value *ptr) const {
 		assert(ptr);
 		if (InArray(ptr))
 			return Key(ptr - arrayValues);
@@ -520,7 +520,7 @@ public:
 	}
 
 	//force to allocate memory for at least given amount of elements (separately for array and hash parts)
-	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
+	AWH_NOINLINE void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 		if (arraySizeLB || arraySize)
 			arraySizeLB = std::max(Size(Size(1) << log2up(arraySizeLB)), std::max(arraySize, (Size)ARRAY_MIN_SIZE));
 		if (hashSizeLB  ||  hashSize)
@@ -547,7 +547,7 @@ public:
 
 	//internal method: checks all the invariants of the container
 	//it is not called from anywhere (except tests), and you should not call it too
-	bool AssertCorrectness(int verbosity = 2) const {
+	AWH_NOINLINE bool AssertCorrectness(int verbosity = 2) const {
 		if (verbosity >= 0) {
 			//check array/hash sizes
 			AWH_ASSERT_ALWAYS(arraySize == 0 || arraySize >= ARRAY_MIN_SIZE);
@@ -612,7 +612,7 @@ public:
 //make sure std::swap works via Swap method
 namespace std {
 	template<class Key, class Value, class KeyTraits, class ValueTraits>
-	inline void swap(
+	AWH_INLINE void swap(
 		ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &a,
 		ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &b
 	) {

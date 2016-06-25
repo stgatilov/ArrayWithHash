@@ -42,19 +42,19 @@ template<class Size> Size log2size(Size sz) {
 		res++;
 	return res;
 }
-template<class Size> Size log2up(Size sz) {
+template<class Size> static AWH_INLINE Size log2up(Size sz) {
 	return sz == 0 ? 0 : log2size(sz - 1);
 }
 //fast implementations
 #if _MSC_VER >= 1600
-	inline uint32_t log2size(uint32_t sz) {
+	static AWH_INLINE uint32_t log2size(uint32_t sz) {
 		unsigned long pos;
 		if (!_BitScanReverse(&pos, (unsigned long)sz))		//bsr
 			pos = -1;		//branchless
 		return uint32_t((long)pos) + 1;
 	}
 	#if defined(_M_X64)
-	inline uint64_t log2size(uint64_t sz) {
+	static AWH_INLINE uint64_t log2size(uint64_t sz) {
 		unsigned long pos;
 		if (!_BitScanReverse64(&pos, (unsigned __int64)sz))
 			pos = -1;
@@ -62,14 +62,14 @@ template<class Size> Size log2up(Size sz) {
 	}
 	#endif
 #elif __GNUC__
-	inline uint32_t log2size(uint32_t sz) {
+	static AWH_INLINE uint32_t log2size(uint32_t sz) {
 		int pos = 31 ^ __builtin_clz((unsigned int)sz);		//bsr
 		pos++;
 		pos = (sz == 0 ? 0 : pos);	//branch on mingw?...
 		return uint32_t(pos);
 	}
 	#if defined(__amd64__)
-	inline uint64_t log2size(uint64_t sz) {
+	static AWH_INLINE uint64_t log2size(uint64_t sz) {
 		int pos = 63 ^ __builtin_clzll((unsigned long long)sz);
 		pos++;
 		pos = (sz == 0 ? 0 : pos);
@@ -78,7 +78,7 @@ template<class Size> Size log2up(Size sz) {
 	#endif
 #endif
 #if (_MSC_VER >= 1600 || __GNUC__) && !(defined(_M_X64) || defined(__amd64__))
-	inline uint64_t log2size(uint64_t sz) {
+	static AWH_INLINE uint64_t log2size(uint64_t sz) {
 		union {
 			struct { uint32_t low, high; };
 			uint64_t both;
@@ -90,5 +90,5 @@ template<class Size> Size log2up(Size sz) {
 	}
 #endif
 
-inline uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz)); }
-inline uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
+static AWH_INLINE uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz)); }
+static AWH_INLINE uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
