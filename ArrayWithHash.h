@@ -379,6 +379,7 @@ public:
 	}
 
 #ifndef AWH_NO_CPP11
+	//container is easily movable in C++11
 	ArrayWithHash(ArrayWithHash &&iSource) {
 		RelocateFrom(iSource);
 		iSource.Flush();
@@ -389,6 +390,7 @@ public:
 	}
 #endif
 
+	//fast O(1) swap between containers
 	void Swap(ArrayWithHash &other) {
 		std::swap(arraySize, other.arraySize);
 		std::swap(arrayCount, other.arrayCount);
@@ -417,8 +419,9 @@ public:
 		return arrayCount + hashCount;
 	}
 
-	//returns value for given key
-	//or EMPTY_VALUE if not present
+	//return value for given key
+	//or "empty" value if not present
+	//Note: requires Value type to be copyable
 	inline Value Get(Key key) const {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		if (InArray(key))
@@ -441,7 +444,7 @@ public:
 
 	//sets value associated with given key
 	//key is inserted if not present before
-	//returns pointer to the updated value
+	//returns pointer to the updated/inserted value
 	inline Value *Set(Key key, Value value) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		assert(!ValueTraits::IsEmpty(value));
@@ -456,7 +459,7 @@ public:
 	}
 
 	//if key is present, then returns pointer to it
-	//otherwise adds a new key with associated value, returns NULL
+	//otherwise adds a new key with associated value, and returns NULL
 	inline Value *SetIfNew(Key key, Value value) {
 		assert(key != EMPTY_KEY && key != REMOVED_KEY);
 		assert(!ValueTraits::IsEmpty(value));
@@ -493,7 +496,7 @@ public:
 			HashRemove(key);
 	}
 
-	//removes key by pointer to its value
+	//removes key specified by pointer to its value
 	inline void RemovePtr(Value *ptr) {
 		assert(ptr);
 		assert(!ValueTraits::IsEmpty(*ptr));
@@ -527,10 +530,10 @@ public:
 		Reallocate(arraySizeLB, hashSizeLB);
 	}
 
-	//perform given action for all the elements
+	//perform given action for all the elements in container
 	//callback is specified in format:
 	//  bool action(Key key, Value &value);
-	//it must return false to continue iteration, true to stop
+	//it must return: false to continue iteration, true to stop
 	template<class Action> void ForEach(Action &action) const {
 		for (Size i = 0; i < arraySize; i++)
 			if (!ValueTraits::IsEmpty(arrayValues[i]))
@@ -542,6 +545,8 @@ public:
 					return;
 	}
 
+	//internal method: checks all the invariants of the container
+	//it is not called from anywhere (except tests), and you should not call it too
 	bool AssertCorrectness(int verbosity = 2) const {
 		if (verbosity >= 0) {
 			//check array/hash sizes
@@ -604,6 +609,7 @@ public:
 	}
 };
 
+//make sure std::swap works via Swap method
 namespace std {
 	template<class Key, class Value, class KeyTraits, class ValueTraits>
 	inline void swap(
