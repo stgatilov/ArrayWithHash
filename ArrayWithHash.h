@@ -36,9 +36,9 @@ class ArrayWithHash {
 	typedef TValue Value;
 	typedef TKeyTraits KeyTraits;
 	typedef TValueTraits ValueTraits;
+	typedef typename KeyTraits::Size Size;
 
 private:
-	typedef typename KeyTraits::Size Size;
 	static const Key EMPTY_KEY = KeyTraits::EMPTY_KEY;
 	static const Key REMOVED_KEY = KeyTraits::REMOVED_KEY;
 
@@ -51,7 +51,7 @@ private:
 	template<class Elem> static Elem* AllocateBuffer(Size elemCount) {
 		if (elemCount == 0)
 			return NULL;
-		return (Elem*) malloc (size_t(elemCount * sizeof(Elem)));
+		return (Elem*) malloc (size_t(elemCount) * sizeof(Elem));
 	}
 	template<class Elem> static void DeallocateBuffer(Elem *buffer) {
 		free(buffer);
@@ -67,7 +67,7 @@ private:
 	}
 	static inline void RelocateMany(Value *dst, Value *src, Size cnt) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
-			memcpy(dst, src, size_t(cnt * sizeof(Value)));
+			memcpy(dst, src, size_t(cnt) * sizeof(Value));
 		else {
 			for (Size i = 0; i < cnt; i++) {
 				new (&dst[i]) Value(AWH_MOVE(src[i]));
@@ -81,7 +81,7 @@ private:
 	}
 	inline bool InArray(Value *ptr) const {
 		size_t offset = (char*)ptr - (char*)arrayValues;
-		return offset < arraySize * sizeof(Value);
+		return offset < size_t(arraySize) * sizeof(Value);
 	}
 
 	Size FindCellEmpty(Key key) const {
