@@ -3,6 +3,18 @@
 #include <stdint.h>
 #include <stdio.h>
 
+//macros for controlling inlining behavior (if wanted)
+#if defined(_MSC_VER) && defined(AWH_CONTROL_INLINING)
+	#define AWH_INLINE __forceinline
+	#define AWH_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) && defined(AWH_CONTROL_INLINING)
+	#define AWH_INLINE __attribute__((always_inline)) inline
+	#define AWH_NOINLINE __attribute__((noinline))
+#else
+	#define AWH_INLINE inline
+	#define AWH_NOINLINE 
+#endif
+
 //for testing purposes and for method AssertCorrectness
 #define AWH_ASSERT_ALWAYS(expr) { \
 	if (!(expr)) { \
