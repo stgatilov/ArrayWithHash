@@ -523,7 +523,7 @@ public:
 	//callback is specified in format:
 	//  bool action(Key key, Value &value);
 	//it must return false to continue iteration, true to stop
-	template<class Action> void ForEach(Action action) const {
+	template<class Action> void ForEach(Action &action) const {
 		for (Size i = 0; i < arraySize; i++)
 			if (!ValueTraits::IsEmpty(arrayValues[i]))
 				if (action(Key(i), arrayValues[i]))
