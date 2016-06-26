@@ -178,7 +178,7 @@ private:
 				newArraySize = aSize;
 				newArrayCount = prefSum;
 			}
-			else if (arrayCount + hashCount < required)
+			else if (arrayCount + hashCount + 1 < required)
 				break;	//this size and greater are surely not viable
 		}
 		//if still no element is in the array part, then do not create it
