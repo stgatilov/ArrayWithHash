@@ -43,6 +43,7 @@ template<
 #endif
 >
 class ArrayWithHash {
+public:
 	//accessing template arguments from outside
 	typedef TKey Key;
 	typedef TValue Value;
@@ -50,6 +51,8 @@ class ArrayWithHash {
 	typedef TValueTraits ValueTraits;
 	//default unsigned integer type
 	typedef typename KeyTraits::Size Size;
+	//pointer to value is used as iterator
+	typedef Value *Ptr;
 
 private:
 	//pseudonyms for making code more readable
