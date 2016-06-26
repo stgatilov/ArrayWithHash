@@ -148,7 +148,7 @@ private:
 		Size logHisto[BITS + 1] = {0};
 		Size logArraySize = log2up(arraySize);
 
-		//=== populate logHisto histogram with all the alive elements ===
+		//=== populate logHisto histogram with all the valid elements ===
 		logHisto[logArraySize] = arrayCount;	//elements in array part
 		logHisto[log2size(newKey)]++;			//to-be-inserted element
 		for (Size i = 0; i < hashSize; i++) {
@@ -156,7 +156,7 @@ private:
 			Key key = hashKeys[i];
 			if (key == EMPTY_KEY || key == REMOVED_KEY)
 				continue;
-			//alive element: increment histogram count
+			//valid element: increment histogram count
 			Size keyBits = log2size((Size)key);
 			assert(keyBits >= logArraySize);
 			logHisto[keyBits]++;
@@ -200,112 +200,146 @@ private:
 		Reallocate(newArraySize, newHashSize);
 	}
 
-	//relocate only the array part of the data structure
+	//reallocate the array part of the data structure
 	//newArraySize is the desired new size of the array
 	AWH_NOINLINE void RelocateArrayPart(Size newArraySize) {
 		Value *newArrayValues;
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
+			//values are marked as trivially relocatable: realloc can be used
 			newArrayValues = (Value*) realloc(arrayValues, size_t(newArraySize) * sizeof(Value));
 		else {
+			//allocate new buffer
 			newArrayValues = AllocateBuffer<Value>(newArraySize);
+			//relocate all elements to it
 			RelocateMany(newArrayValues, arrayValues, arraySize);
+			//free old buffer
 			DeallocateBuffer<Value>(arrayValues);
 		}
+		//upper part of the array is still dead (i.e. raw, not constructed)
+		//we construct all these elements with EMPTY value
 		for (Value *ptr = newArrayValues + arraySize; ptr < newArrayValues + newArraySize; ptr++)
 			new (ptr) Value(ValueTraits::GetEmpty());
 
+		//save the new array
 		arrayValues = newArrayValues;
 		arraySize = newArraySize;
 	}
 
+	//perform a single pass over hash table in order to:
+	// 1. clean, i.e. eliminate all REMOVED entries
+	// 2. move some elements into array part (if RELOC_ARRAY is true)
 	template<bool RELOC_ARRAY> AWH_NOINLINE void RelocateHashInPlace(Size newArraySize) {
-		//relocate array if required
+		//reallocate the array part (if required)
 		if (RELOC_ARRAY)
 			RelocateArrayPart(newArraySize);
 
+		//hash is empty, no action required
 		if (hashSize == 0)
 			return;
 		Size totalCount = arrayCount + hashCount;
 		
 		//find first empty cell
+		//it must be present because hash fill ratio is bounded
 		Size firstEmpty = 0;
 		while (hashKeys[firstEmpty] != EMPTY_KEY)
 			firstEmpty++;
 
-		//do a full round from it
+		//do a full round over the hash table
+		//note: iteration is started from the first empty cell
+		//as a result, each group of non-empty elements is enumerated in order
 		Size pos = firstEmpty;
 		do {
 			Key key = hashKeys[pos];
+			//mark key as empty, even if it is valid,
+			//allowing it to be found by FindCellEmpty later
 			hashKeys[pos] = EMPTY_KEY;
 
 			if (key != EMPTY_KEY && key != REMOVED_KEY) {
+				//valid element: must be relocated
 				Value &value = hashValues[pos];
 				if (RELOC_ARRAY && InArray(key)) {
+					//fits into expanded array part
+					//note: destination must be killed before relocation
 					arrayValues[key].~Value();
 					RelocateOne(arrayValues[key], value);
 					arrayCount++;
 				}
 				else {
-					//insert key as usual
+					//must be retained in the hash table part
+					//in order to find its new place, insert it as usual
 					Size cell = FindCellEmpty(key);
 					hashKeys[cell] = key;
-					//move value if necessary
+					//relocate element's value (only if its cell has changed)
 					if (cell != pos)
 						RelocateOne(hashValues[cell], value);
 				}
 			}
 
+			//go to the next cell (cyclically)
 			pos = (pos + 1) & (hashSize - 1);
 		} while (pos != firstEmpty);
 
-		//update hash count
+		//if necessary, update hash table count
 		if (RELOC_ARRAY)
 			hashCount = totalCount - arrayCount;
-		//forget about removed entries
+		//all the REMOVED entries were dropped, forget them
 		hashFill = hashCount;
 	}
 
+	//reallocate the hash table part, doing the following in process:
+	// 1. clean, i.e. eliminate all REMOVED entries
+	// 2. move some elements into array part (if RELOC_ARRAY is true)
 	template<bool RELOC_ARRAY> AWH_NOINLINE void RelocateHashToNew(Size newHashSize, Size newArraySize) {
-		//relocate array if required
+		//reallocate the array part (if required)
 		if (RELOC_ARRAY)
 			RelocateArrayPart(newArraySize);
 
-		//create new hash table and swap with it
+		//create new buffers for the hash table
 		Key *newHashKeys = AllocateBuffer<Key>(newHashSize);
+		//note: fill keys buffer with EMPTY key
 		std::uninitialized_fill_n(newHashKeys, newHashSize, EMPTY_KEY);
 		Value *newHashValues = AllocateBuffer<Value>(newHashSize);
+		//note: leave values buffer raw (i.e. no elements constructed)
 
+		//install the new buffers into "this" object
 		std::swap(hashKeys, newHashKeys);
 		std::swap(hashValues, newHashValues);
 		std::swap(hashSize, newHashSize);
-		//Note: new* are now actually old values
+		//Note: newXXX are now actually old values
 
 		Size totalCount = arrayCount + hashCount;
-
+		//iterate over all elements in the old hash table (and relocate them)
 		for (Size i = 0; i < newHashSize; i++) {
 			Key key = newHashKeys[i];
 			if (key == EMPTY_KEY || key == REMOVED_KEY)
 				continue;
+			//valid key found, must be inserted into the new hash table
 			Value &value = newHashValues[i];
 			if (RELOC_ARRAY && InArray(key)) {
+				//fits into expanded array part
+				//note: destination must be killed before relocation
 				arrayValues[key].~Value();
 				RelocateOne(arrayValues[key], value);
 				arrayCount++;
 			}
 			else {
+				//must be inserted into the new hash table
 				Size cell = FindCellEmpty(key);
 				hashKeys[cell] = key;
 				RelocateOne(hashValues[cell], value);
 			}
 		}
 
+		//free the old hash table buffers
+		//note: the keys are integers, so no destruction is necessary for them
 		DeallocateBuffer<Key>(newHashKeys);
+		//note: values buffer is not raw, since all the valid values have been relocated
 		DeallocateBuffer<Value>(newHashValues);
 
-		//update hash count
+		//if necessary, update hash table count
 		if (RELOC_ARRAY)
 			hashCount = totalCount - arrayCount;
-		//forget about removed entries
+		//all the REMOVED entries were dropped, forget them
 		hashFill = hashCount;
 	}
 
