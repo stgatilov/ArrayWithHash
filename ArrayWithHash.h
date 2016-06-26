@@ -202,7 +202,7 @@ private:
 
 	//relocate only the array part of the data structure
 	//newArraySize is the desired new size of the array
-	AWH_NOINLINE void RelocateArrayPart(Size &newArraySize) {
+	AWH_NOINLINE void RelocateArrayPart(Size newArraySize) {
 		Value *newArrayValues;
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			newArrayValues = (Value*) realloc(arrayValues, size_t(newArraySize) * sizeof(Value));
@@ -214,8 +214,8 @@ private:
 		for (Value *ptr = newArrayValues + arraySize; ptr < newArrayValues + newArraySize; ptr++)
 			new (ptr) Value(ValueTraits::GetEmpty());
 
-		std::swap(arrayValues, newArrayValues);
-		std::swap(arraySize, newArraySize);
+		arrayValues = newArrayValues;
+		arraySize = newArraySize;
 	}
 
 	template<bool RELOC_ARRAY> AWH_NOINLINE void RelocateHashInPlace(Size newArraySize) {
