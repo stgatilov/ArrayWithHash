@@ -1,12 +1,24 @@
 #pragma once
 
-#include <map>
-#include <unordered_map>
 #include <algorithm>
 
-//Wrapper aroung std::unordered_map (or std::map) with interface of ArrayHash.
-//Used mainly for comparison of ArrayHash with STL containers.
-template<class TKey, class TValue, class TKeyTraits = DefaultKeyTraits<TKey>, class TValueTraits = DefaultValueTraits<TValue>>
+#ifndef AWH_NO_CPP11
+#include <unordered_map>
+#else
+#include <map>
+#endif
+
+//Wrapper around std::unordered_map (or std::map) with exactly the same interface as of ArrayWithHash.
+//Used for comparison between ArrayWithHash and STL container (results and performance).
+//Can be used to easily disable/remove ArrayWithHash from project.
+template<
+	class TKey, class TValue,
+#ifndef AWH_NO_CPP11
+	class TKeyTraits = DefaultKeyTraits<TKey>, class TValueTraits = DefaultValueTraits<TValue>
+#else
+	class TKeyTraits, class TValueTraits
+#endif
+>
 class StdMapWrapper {
 public:
 	typedef TKey Key;
@@ -15,19 +27,28 @@ public:
 	typedef TValueTraits ValueTraits;
 
 private:
-//	typedef std::map<Key, Value> Map;
+	//use unordered map if available, tree-based map otherwise
+#ifndef AWH_NO_CPP11
 	typedef std::unordered_map<Key, Value> Map;
+#else
+	typedef std::map<Key, Value> Map;
+#endif
 	typedef typename Map::iterator Iter;
 	typedef typename KeyTraits::Size Size;
 
+	//internal implementation of container
 	Map dict;
 
 public:
+	//small wrapper to be used instead of "Value*"
 	struct Ptr {
-		bool null;
+		//iterator of underlying map
 		Iter it;
+		//null flag: Ptr is nullable
+		bool null;
+
 		inline Ptr() : null(true) {}
-		inline Ptr(Iter it) : null(false), it(it) {}
+		inline Ptr(Iter it) : it(it), null(false) {}
 		inline operator bool() const { return !null; }
 		inline bool operator!() const { return null; }
 		inline Value &operator* () const { return it->second; }
@@ -68,19 +89,25 @@ public:
 	inline Key KeyOf(Ptr ptr) const {
 		return ptr.it->first;
 	}
-	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {}
+	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
+#ifndef AWH_NO_CPP11
+		dict.rehash(arraySizeLB + hashSizeLB);
+#endif
+	}
 
-	template<class Action> void ForEach(Action action) const {
+	template<class Action> void ForEach(Action &action) const {
 		for (Iter it = const_cast<Map&>(dict).begin(); it != const_cast<Map&>(dict).end(); it++)
 			if (action(Key(it->first), it->second))
 				return;
 	}
 
-	//for testing only
+#if defined(AWH_TESTING) && !defined(AWH_NO_CPP11)
+	//note: used only for testing purposes
 	template<class Rnd> Key SomeKey(Rnd &rnd) const {
 		size_t idx = std::uniform_int_distribution<size_t>(0, dict.size() - 1)(rnd);
 		typename Map::const_iterator iter = dict.begin();
 		std::advance(iter, idx);
 		return iter->first;
 	}
+#endif
 };
