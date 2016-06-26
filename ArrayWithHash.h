@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <memory>
 #ifdef AWH_TESTING
-#include <set>
+#include <set>   //used only in AssertCorrectness
 #endif
 
 #include "ArrayWithHash_Utils.h"
@@ -15,41 +15,67 @@
 #endif
 
 
+//minimal allowed fill ratio of array part on automatic reallocation
 static const double ARRAY_MIN_FILL = 0.45;
+//minimal allowed fill ratiu of hash table part on automatic reallocation
 static const double HASH_MIN_FILL = 0.30;
+//maximal allowed fill ratio of hash table part ever (next insert -> reallocation)
 static const double HASH_MAX_FILL = 0.75;
+//minimal size of non-empty array part
 static const size_t ARRAY_MIN_SIZE = 8;
+//minimal size of non-empty hash part
 static const size_t HASH_MIN_SIZE = 8;
+//fast check for reaching HASH_MAX_FILL ratio (without float arithmetics)
 template<class Size> static AWH_INLINE bool IsHashFull(Size cfill, Size sz) {
 	return cfill >= ((sz >> 2) * 3);
 }
 
-
+//array with hash table backup = hash table with array optimization
+//Key type must be an integer (32-bit or 64-bit are advised).
+//Value type can be anything: integer, real, pointer, smart pointer, string, ...
 template<
 	class TKey, class TValue,
 #ifndef AWH_NO_CPP11
 	class TKeyTraits = DefaultKeyTraits<TKey>, class TValueTraits = DefaultValueTraits<TValue>
 #else
-	class TKeyTraits, class TValueTraits
+	class TKeyTraits, class TValueTraits	//note: without C++11, user has to always specify traits
 #endif
 >
 class ArrayWithHash {
+	//accessing template arguments from outside
 	typedef TKey Key;
 	typedef TValue Value;
 	typedef TKeyTraits KeyTraits;
 	typedef TValueTraits ValueTraits;
+	//default unsigned integer type
 	typedef typename KeyTraits::Size Size;
 
 private:
+	//pseudonyms for making code more readable
 	static const Key EMPTY_KEY = KeyTraits::EMPTY_KEY;
 	static const Key REMOVED_KEY = KeyTraits::REMOVED_KEY;
 
-	Size arrayCount, arraySize;
-	Size hashSize, hashCount, hashFill;
-	Value *arrayValues, *hashValues;
+	//array part: total size (number of elements)
+	Size arraySize;
+	//array part: number of valid elements
+	Size arrayCount;
+	//hash part: total number of cells
+	Size hashSize;
+	//hash part: number of valid elements
+	Size hashCount;
+	//hash part: number of cells used (including those tagged as REMOVED)
+	Size hashFill;
+	//array part: pointer to buffer
+	Value *arrayValues;
+	//hash part: pointer to buffer with values only
+	Value *hashValues;
+	//hash part: pointer to buffer with keys only
 	Key *hashKeys;
+	//Note: i-th cell of hash table is (hashKeys[i], hashValues[i])
 
 
+	//routines used for memory allocation/deallocation
+	//Note: malloc/free are used in order to take benefits of realloc
 	template<class Elem> static Elem* AllocateBuffer(Size elemCount) {
 		if (elemCount == 0)
 			return NULL;
@@ -59,6 +85,8 @@ private:
 		free(buffer);
 	}
 
+	//relocate single value from alive src to dead dst
+	//after relocation: src is dead, dst is alive
 	static AWH_INLINE void RelocateOne(Value &dst, Value &src) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(&dst, &src, sizeof(Value));
@@ -67,6 +95,7 @@ private:
 			src.~Value();
 		}
 	}
+	//relocate array of values
 	static void RelocateMany(Value *dst, Value *src, Size cnt) {
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
 			memcpy(dst, src, size_t(cnt) * sizeof(Value));
@@ -78,14 +107,21 @@ private:
 		}
 	}
 
+	//checks whether given key belongs to the array part
 	AWH_INLINE bool InArray(Key key) const {
+		//one comparison is used for signed numbers too:
+		//  http://stackoverflow.com/a/17095534/556899
 		return Size(key) < arraySize;
 	}
+	//checks whether given value belongs to the array part
 	AWH_INLINE bool InArray(Value *ptr) const {
 		size_t offset = (char*)ptr - (char*)arrayValues;
 		return offset < size_t(arraySize) * sizeof(Value);
 	}
 
+	//calculate hash function for given key and resolve collision by linear probing
+	//returns the first EMPTY cell found (caller must ensure that key is not yet present)
+	//used only in internal relocation methods
 	AWH_INLINE Size FindCellEmpty(Key key) const {
 		assert(hashSize);
 		Size cell = KeyTraits::HashFunction(key) & (hashSize - 1);
@@ -93,6 +129,8 @@ private:
 			cell = (cell + 1) & (hashSize - 1);
 		return cell;
 	}
+	//returns the first cell which is EMPTY of contains specified key
+	//used in all user-called methods
 	AWH_INLINE Size FindCellKeyOrEmpty(Key key) const {
 		assert(hashSize);
 		Size cell = KeyTraits::HashFunction(key) & (hashSize - 1);
@@ -101,50 +139,63 @@ private:
 		return cell;
 	}
 
+	//resize array and hash parts due to hash table fill ratio maximized
+	//newKey parameter is the new key to be inserted right after resizing
+	//the new sizes are chosen so that both the old keys and the new one fit
 	AWH_NOINLINE void AdaptSizes(Key newKey) {
 		static const int BITS = sizeof(Size) * 8;
+		//logHisto[t] = number of keys in range [2^(t-1); 2^t - 1]
 		Size logHisto[BITS + 1] = {0};
 		Size logArraySize = log2up(arraySize);
 
-		//count number of keys of size in [2^(t-1); 2^t - 1]
-		logHisto[logArraySize] = arrayCount;
-		logHisto[log2size(newKey)]++;
+		//populate logHisto histogram with all the alive elements
+		logHisto[logArraySize] = arrayCount;	//elements in array part
+		logHisto[log2size(newKey)]++;			//to-be-inserted element
 		for (Size i = 0; i < hashSize; i++) {
+			//Note: only elements in hash table part are processed
 			Key key = hashKeys[i];
 			if (key == EMPTY_KEY || key == REMOVED_KEY)
 				continue;
+			//alive element: increment histogram count
 			Size keyBits = log2size((Size)key);
 			assert(keyBits >= logArraySize);
 			logHisto[keyBits]++;
 		}
 
-		//choose appropriate array size
+		//choose appropriate size for the array part
 		Size newArraySize = 0, newArrayCount = 0;
+		//note: array cannot be shrink, and it cannot be too small
 		Size lowerBound = std::max(arraySize, (Size)ARRAY_MIN_SIZE);
 		Size prefSum = 0;
 		for (Size i = logArraySize; i < BITS; i++) {
+			//prefSum is number of elements less than 2^i
 			prefSum += logHisto[i];
 			Size aSize = 1 << i;
+			//array must have enough fill ratio for any viable size
 			Size required = Size(ARRAY_MIN_FILL * aSize);
 			if (aSize <= lowerBound || prefSum >= required) {
+				//maximal array size is chosen among viable options
 				newArraySize = aSize;
 				newArrayCount = prefSum;
 			}
 			else if (arrayCount + hashCount < required)
-				break;
+				break;	//this size and greater are surely not viable
 		}
+		//if still no element is in the array part, then do not create it
 		if (arraySize == 0 && newArrayCount == 0)
 			newArraySize = 0;
 
-		//choose hash table size
+		//choose appropriate size for the hash table part
 		Size newHashCount = arrayCount + hashCount - newArrayCount + 1;
+		//hash table part cannot shrink, and it cannot be too small
 		Size newHashSize = std::max(hashSize, (Size)HASH_MIN_SIZE);
 		while (newHashCount >= HASH_MIN_FILL * newHashSize * 2)
 			newHashSize *= 2;
+		//if still no element is in the hash table part, then do not create it
 		if (hashSize == 0 && newHashCount == 0)
 			newHashSize = 0;
 
-		//change sizes and relocate data
+		//physically relocate data
 		Reallocate(newArraySize, newHashSize);
 	}
 
