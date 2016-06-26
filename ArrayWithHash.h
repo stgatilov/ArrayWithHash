@@ -9,6 +9,7 @@
 #include <set>   //used only in AssertCorrectness
 #endif
 
+//compiler must be able to find these companion headers in its include path
 #include "ArrayWithHash_Utils.h"
 #ifndef AWH_NO_CPP11
 #include "ArrayWithHash_Traits.h"
