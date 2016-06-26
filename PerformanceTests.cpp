@@ -4,6 +4,18 @@
 #include <vector>
 #include <string>
 
+double Vector_GrowthSequental(int size, int repeats) {
+	double start = my_clock();
+
+	for (int i = 0; i < repeats; i++) {
+		std::vector<int> cont;
+		for (int x = 0; x < size; x++)
+			cont.push_back(x*x);
+	}
+
+	return my_clock() - start;
+}
+
 template<class T> static std::string to_string(T val, const char *format) {
 	char buff[256];
 	sprintf(buff, format, val);
@@ -43,6 +55,8 @@ void SpeedAll(bool compareToStl) {
 	TIME_CALL(GetHashRandomMiss      , (100000, 100), (100000, 100));
 	                                                               
 	TIME_CALL(GrowthArraySequental   , (100000, 100), (100000, 1000));
+	if (compareToStl)
+		printf("Growth (100000, 100)  std::vector: %7.2lf\n", Vector_GrowthSequental(100000, 100));
 	TIME_CALL(GrowthArrayRandom      , (100000, 100), (100000, 100));
 	TIME_CALL(GrowthHashRandom       , (100000, 100), (100000, 100));
 	                                                               
