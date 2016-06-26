@@ -301,7 +301,7 @@ private:
 		//create new buffers for the hash table
 		Key *newHashKeys = AllocateBuffer<Key>(newHashSize);
 		//note: fill keys buffer with EMPTY key
-		std::uninitialized_fill_n(newHashKeys, newHashSize, EMPTY_KEY);
+		std::uninitialized_fill_n(newHashKeys, newHashSize, Key(EMPTY_KEY));
 		Value *newHashValues = AllocateBuffer<Value>(newHashSize);
 		//note: leave values buffer raw (i.e. no elements constructed)
 
@@ -565,7 +565,7 @@ public:
 			//destroy all the alive values of valid elements
 			DestroyAllHashValues();
 			//make all cells empty
-			std::fill_n(hashKeys, hashSize, EMPTY_KEY);
+			std::fill_n(hashKeys, hashSize, Key(EMPTY_KEY));
 		}
 		//reset all element counters
 		arrayCount = hashCount = hashFill = 0;
