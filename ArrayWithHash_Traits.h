@@ -73,12 +73,12 @@ typename std::enable_if<std::is_integral<Value>::value, Value>::type DefaultGetE
 // 2. it may be unsafe: implementation is allowed to change NaN's representation even on copy
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_floating_point<Value>::value, bool>::type DefaultIsEmpty(const Value &value, int) {
-	typedef typename IntegerBySize<sizeof Value>::sint Int;
+	typedef typename IntegerBySize<sizeof(Value)>::sint Int;
 	return *(Int*)&value == (Int)-1;
 }
 template<class Value> static AWH_INLINE
 typename std::enable_if<std::is_floating_point<Value>::value, Value>::type DefaultGetEmpty(int) {
-	typedef typename IntegerBySize<sizeof Value>::sint Int;
+	typedef typename IntegerBySize<sizeof(Value)>::sint Int;
 	union  {
 		Value value;
 		Int integer;
