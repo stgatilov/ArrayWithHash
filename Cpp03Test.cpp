@@ -1,5 +1,6 @@
 #define AWH_NO_CPP11
 #include "ArrayWithHash.h"
+#include "StdMapWrapper.h"
 
 struct KeyTraits {
 	typedef int32_t Key;
@@ -27,6 +28,7 @@ struct ValueTraits {
 };
 
 typedef ArrayWithHash<int32_t, int32_t, KeyTraits, ValueTraits> TArrayWithHash;
+typedef StdMapWrapper<int32_t, int32_t, KeyTraits, ValueTraits> TStdMapWrapper;
 
 struct SummatorAction {
 	int32_t sum;
@@ -40,8 +42,9 @@ struct SummatorAction {
 	}
 };
 
-int main() {
-	TArrayWithHash dict;
+template<class Container> void RunTest() {
+	typedef typename Container::Ptr Ptr;
+	Container dict;
 	for (int i = 0; i < 10; i++)
 		dict.Set(i, 11*i);
 
@@ -54,7 +57,7 @@ int main() {
 	dict.SetIfNew(9, 0);
 	dict.SetIfNew(12, 0);
 	for (int i = 8; i<=12; i++) {
-		int32_t *val = dict.GetPtr(i);
+		Ptr val = dict.GetPtr(i);
 		if (!val) continue;
 		if (*val == 0)
 			printf("%d\n", i);
@@ -65,7 +68,7 @@ int main() {
 	dict.ForEach(action);
 	printf("%d %08X\n", action.sum, action.mask);
 
-	TArrayWithHash other;
+	Container other;
 	other.Set(0, 2);
 	other.Set(1, 3);
 	other.Set(2, 5);
@@ -82,11 +85,15 @@ int main() {
     	dict.Remove(i);
 	printf("%d\n", dict.GetSize());
     for (int i = 0; i < 15; i++) {
-    	int32_t *val = dict.GetPtr(i);
+    	Ptr val = dict.GetPtr(i);
     	if (val && *val > 0)
     		dict.RemovePtr(val);
     }
 	printf("%d\n", dict.GetSize());
+}
 
+int main() {
+	RunTest<TArrayWithHash>();
+	RunTest<TStdMapWrapper>();
 	return 0;
 }
