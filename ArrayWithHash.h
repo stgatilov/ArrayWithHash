@@ -55,11 +55,11 @@ private:
 	static const Key EMPTY_KEY = KeyTraits::EMPTY_KEY;
 	static const Key REMOVED_KEY = KeyTraits::REMOVED_KEY;
 
-	//array part: total size (number of elements)
+	//array part: total size = maximal number of elements (power of two or zero)
 	Size arraySize;
 	//array part: number of valid elements
 	Size arrayCount;
-	//hash part: total number of cells
+	//hash part: total number of cells (power of two or zero)
 	Size hashSize;
 	//hash part: number of valid elements
 	Size hashCount;
@@ -148,7 +148,7 @@ private:
 		Size logHisto[BITS + 1] = {0};
 		Size logArraySize = log2up(arraySize);
 
-		//populate logHisto histogram with all the alive elements
+		//=== populate logHisto histogram with all the alive elements ===
 		logHisto[logArraySize] = arrayCount;	//elements in array part
 		logHisto[log2size(newKey)]++;			//to-be-inserted element
 		for (Size i = 0; i < hashSize; i++) {
@@ -162,7 +162,7 @@ private:
 			logHisto[keyBits]++;
 		}
 
-		//choose appropriate size for the array part
+		//=== choose appropriate size for the array part ===
 		Size newArraySize = 0, newArrayCount = 0;
 		//note: array cannot be shrink, and it cannot be too small
 		Size lowerBound = std::max(arraySize, (Size)ARRAY_MIN_SIZE);
@@ -185,20 +185,23 @@ private:
 		if (arraySize == 0 && newArrayCount == 0)
 			newArraySize = 0;
 
-		//choose appropriate size for the hash table part
+		//=== choose appropriate size for the hash table part ===
 		Size newHashCount = arrayCount + hashCount - newArrayCount + 1;
 		//hash table part cannot shrink, and it cannot be too small
 		Size newHashSize = std::max(hashSize, (Size)HASH_MIN_SIZE);
+		//increase hash size as long as hash fill ratio does not drop too small
 		while (newHashCount >= HASH_MIN_FILL * newHashSize * 2)
 			newHashSize *= 2;
 		//if still no element is in the hash table part, then do not create it
 		if (hashSize == 0 && newHashCount == 0)
 			newHashSize = 0;
 
-		//physically relocate data
+		//physically relocate all the data
 		Reallocate(newArraySize, newHashSize);
 	}
 
+	//relocate only the array part of the data structure
+	//newArraySize is the desired new size of the array
 	AWH_NOINLINE void RelocateArrayPart(Size &newArraySize) {
 		Value *newArrayValues;
 		if (ValueTraits::RELOCATE_WITH_MEMCPY)
