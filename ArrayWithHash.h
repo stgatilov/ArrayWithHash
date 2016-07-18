@@ -9,12 +9,18 @@
 #include <set>   //used only in AssertCorrectness
 #endif
 
+//name of global namespace for the library
+//you can easily change it here if you want
+#define AWH_NAMESPACE Awh
+
 //compiler must be able to find these companion headers in its include path
 #include "ArrayWithHash_Utils.h"
 #ifndef AWH_NO_CPP11
 #include "ArrayWithHash_Traits.h"
 #endif
 
+//namespace for ArrayWithHash 
+namespace AWH_NAMESPACE {
 
 //minimal allowed fill ratio of array part on automatic reallocation
 static const double ARRAY_MIN_FILL = 0.45;
@@ -806,13 +812,16 @@ public:
 #endif
 };
 
+//end namespace
+}
+
 //make sure std::swap works via Swap method
 //theoretically, it is also ok to swap by default with three moves (unless C++11 is disabled)
 namespace std {
 	template<class Key, class Value, class KeyTraits, class ValueTraits>
 	AWH_INLINE void swap(
-		ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &a,
-		ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &b
+		AWH_NAMESPACE::ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &a,
+		AWH_NAMESPACE::ArrayWithHash<Key, Value, KeyTraits, ValueTraits> &b
 	) {
 		a.Swap(b);
 	}

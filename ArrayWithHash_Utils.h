@@ -38,6 +38,9 @@
 #endif
 
 
+//namespace for ArrayWithHash 
+namespace AWH_NAMESPACE {
+
 //================================================================
 //integer logarithm routines are defined below
 
@@ -106,3 +109,6 @@ static AWH_INLINE uint16_t log2size(uint16_t sz) { return log2size(uint32_t(sz))
 static AWH_INLINE uint8_t log2size(uint8_t sz) { return log2size(uint32_t(sz)); }
 
 //================================================================
+
+//end namespace
+}

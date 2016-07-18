@@ -6,6 +6,8 @@
 #include <memory>
 #include <string>
 
+using namespace Awh;
+
 template<class Value> typename std::enable_if<std::is_integral<Value>::value, Value>::type
 UniDistrRandom(std::mt19937 &rnd) {
   if (std::is_signed<Value>::value)

@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <type_traits>
 
+//namespace for ArrayWithHash 
+namespace AWH_NAMESPACE {
+
 //getting integer type by its size in bytes
 //used for hacking with floats representation
 template<int bytes> struct IntegerBySize {};
@@ -161,3 +164,6 @@ template<class Value> struct DefaultValueTraits : public DefaultRelocationPolicy
 	//override to false in order to use std::move + destructor instead
 	//static const bool RELOCATE_WITH_MEMCPY = true;	//inherited
 };
+
+//end namespace
+}

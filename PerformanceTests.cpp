@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+using namespace Awh;
+
 double Vector_GrowthSequental(int size, int repeats) {
 	double start = my_clock();
 

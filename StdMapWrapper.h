@@ -8,6 +8,9 @@
 #include <map>
 #endif
 
+//Note: placed into same namespace as the main container
+namespace Awh {
+
 //Wrapper around std::unordered_map (or std::map) with exactly the same interface as of ArrayWithHash.
 //Used for comparison between ArrayWithHash and STL container (results and performance).
 //Can be used to easily disable/remove ArrayWithHash from project.
@@ -95,6 +98,7 @@ public:
 #endif
 	}
 
+
 	template<class Action> void ForEach(Action &action) const {
 		for (Iter it = const_cast<Map&>(dict).begin(); it != const_cast<Map&>(dict).end(); it++)
 			if (action(Key(it->first), it->second))
@@ -111,3 +115,6 @@ public:
 	}
 #endif
 };
+
+//end namespace
+}

@@ -27,8 +27,8 @@ struct ValueTraits {
 	static const bool RELOCATE_WITH_MEMCPY = true;
 };
 
-typedef ArrayWithHash<int32_t, int32_t, KeyTraits, ValueTraits> TArrayWithHash;
-typedef StdMapWrapper<int32_t, int32_t, KeyTraits, ValueTraits> TStdMapWrapper;
+typedef Awh::ArrayWithHash<int32_t, int32_t, KeyTraits, ValueTraits> TArrayWithHash;
+typedef Awh::StdMapWrapper<int32_t, int32_t, KeyTraits, ValueTraits> TStdMapWrapper;
 
 struct SummatorAction {
 	int32_t sum;
