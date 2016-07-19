@@ -16,7 +16,7 @@ int assertLevel = 2;
 namespace std {
 	//Workaround for a bug in MSVC2013 compiler:
 	//http://stackoverflow.com/q/34135409/556899
-	template<class T> struct is_copy_constructible<std::unique_ptr<T>> : false_type {};
+	template<class T> struct is_copy_constructible<std::unique_ptr<T>> : std::false_type {};
 };
 
 //ugly way to exclude for compilation on condition
