@@ -19,7 +19,7 @@
 	//assert that is never thrown away
 	#define AWH_ASSERT_ALWAYS(expr) { \
 		if (!(expr)) { \
-			fprintf(stderr, "Assertion failed: %s in %s:%s\n", #expr, __FILE__, __LINE__); \
+			fprintf(stderr, "Assertion failed: %s in %s:%d\n", #expr, __FILE__, __LINE__); \
 			assert(#expr != 0); \
 		} \
 	}
