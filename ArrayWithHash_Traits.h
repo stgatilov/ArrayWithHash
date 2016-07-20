@@ -125,9 +125,11 @@ template<class Value> struct DefaultRelocationPolicy {
 };
 //use this macro to set the per-type value of the flag
 #define AWH_SET_RELOCATE_WITH_MEMCPY(Value, policy) \
-template<> struct DefaultRelocationPolicy<Value> { \
-	static const bool RELOCATE_WITH_MEMCPY = policy; \
-};
+namespace AWH_NAMESPACE { \
+	template<> struct DefaultRelocationPolicy<Value> { \
+		static const bool RELOCATE_WITH_MEMCPY = policy; \
+	}; \
+}
 
 //=======================================================================
 
