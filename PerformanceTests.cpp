@@ -39,7 +39,7 @@ void SpeedAll(bool compareToStl) {
 		double timeStl = Speed_##func<StdMapWrapper<int32_t, int32_t>>params; \
 		row.push_back(#func); \
 		row.push_back(#params); \
-		row.push_back(to_string(timeMine, "mine: %7.2lf")); \
+		row.push_back(to_string(timeMine, "awh: %7.2lf")); \
 		row.push_back(to_string(timeStl , "stl: %7.2lf")); \
 		row.push_back(to_string(timeStl / timeMine, "speedup: %5.2lf")); \
 	} \
@@ -47,7 +47,7 @@ void SpeedAll(bool compareToStl) {
 		double timeMine = Speed_##func<ArrayWithHash<int32_t, int32_t>>paramsFast; \
 		row.push_back(#func); \
 		row.push_back(#paramsFast); \
-		row.push_back(to_string(timeMine, "mine: %7.2lf")); \
+		row.push_back(to_string(timeMine, "awh: %7.2lf")); \
 	} \
 	for (size_t i = 0; i < row.size(); i++) \
 		fprintf(stderr, "%s ", row[i].c_str()); \
