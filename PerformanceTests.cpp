@@ -55,18 +55,18 @@ void SpeedAll(bool compareToStl) {
 	TIME_CALL(GetArrayRandomMix      , (100000, 100), (100000, 1000));
 	TIME_CALL(GetHashRandomHit       , (100000, 100), (100000, 100));
 	TIME_CALL(GetHashRandomMiss      , (100000, 100), (100000, 100));
-	                                                               
+																																 
 	TIME_CALL(GrowthArraySequental   , (100000, 100), (100000, 1000));
 	if (compareToStl)
 		printf("Growth (100000, 100)  std::vector: %7.2lf\n", Vector_GrowthSequental(100000, 100));
 	TIME_CALL(GrowthArrayRandom      , (100000, 100), (100000, 100));
 	TIME_CALL(GrowthHashRandom       , (100000, 100), (100000, 100));
-	                                                               
+																																 
 	TIME_CALL(RemoveArrayRandom      , (100000, 100), (100000, 1000));
 	TIME_CALL(RemoveHashRandom       , (100000, 100), (100000, 100));
-	                                                               
+																																 
 	TIME_CALL(SetArraySequentalMiss  , (100000, 100), (100000, 1000));
-	                                                               
+																																 
 	TIME_CALL(GetPtrArrayRandomMix   , (100000, 100), (100000, 1000));
 	TIME_CALL(SetArrayRandomMix      , (100000, 100), (100000, 1000));
 	TIME_CALL(SetIfNewArrayRandomMix , (100000, 100), (100000, 1000));

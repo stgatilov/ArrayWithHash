@@ -81,14 +81,14 @@ template<class Container> void RunTest() {
 	std::swap(dict, other);
 	printf("%d %d\n", dict.GetSize(), other.GetSize());
 
-    for (int i = 0; i < 5; i++)
-    	dict.Remove(i);
+	for (int i = 0; i < 5; i++)
+		dict.Remove(i);
 	printf("%d\n", dict.GetSize());
-    for (int i = 0; i < 15; i++) {
-    	Ptr val = dict.GetPtr(i);
-    	if (val && *val > 0)
-    		dict.RemovePtr(val);
-    }
+	for (int i = 0; i < 15; i++) {
+		Ptr val = dict.GetPtr(i);
+		if (val && *val > 0)
+			dict.RemovePtr(val);
+	}
 	printf("%d\n", dict.GetSize());
 }
 

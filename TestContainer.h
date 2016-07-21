@@ -10,10 +10,10 @@ using namespace Awh;
 
 template<class Value> typename std::enable_if<std::is_integral<Value>::value, Value>::type
 UniDistrRandom(std::mt19937 &rnd) {
-  if (std::is_signed<Value>::value)
-	  return (Value)std::uniform_int_distribution<int>(-10000, 10000)(rnd);
-  else
-	  return (Value)std::uniform_int_distribution<int>(0, 20000)(rnd);
+	if (std::is_signed<Value>::value)
+		return (Value)std::uniform_int_distribution<int>(-10000, 10000)(rnd);
+	else
+		return (Value)std::uniform_int_distribution<int>(0, 20000)(rnd);
 }
 template<class Value> typename std::enable_if<std::is_floating_point<Value>::value, Value>::type
 UniDistrRandom(std::mt19937 &rnd) {
