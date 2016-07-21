@@ -99,7 +99,7 @@ public:
 	}
 	void Reserve(Size arraySizeLB, Size hashSizeLB, bool alwaysCleanHash = false) {
 #ifndef AWH_NO_CPP11
-		dict.rehash(arraySizeLB + hashSizeLB);
+		dict.rehash(size_t(arraySizeLB + hashSizeLB));
 #endif
 	}
 
