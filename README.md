@@ -19,7 +19,6 @@ Simply copy the following three headers into your source code repo:
 	ArrayWithHash.h
 	ArrayWithHash_Traits.h
 	ArrayWithHash_Utils.h
-
 ```
 Make sure that all these headers are in the include path of the compiler.
 Include directly only the ArrayWithHash.h file.
@@ -31,46 +30,44 @@ ArrayWithHash library is licensed under the Boost Software License 1.0.
 **1a)** Reading list of objects and registering them by ID:
 ```
 #!c++
-	ArrayWithHash<int, shared_ptr<BaseObject>> idToObj;
-	...
-	while (!feof(input_file)) {
-		shared_ptr<BaseObject> obj;
-		...	//read object into obj
-		assert(idToObj.GetPtr(obj->GetId()) == NULL);
-		idToObj.Set(obj->GetId(), std::move(obj));
-	}
+ArrayWithHash<int, shared_ptr<BaseObject>> idToObj;
+...
+while (!feof(input_file)) {
+	shared_ptr<BaseObject> obj;
+	...	//read object into obj
+	assert(idToObj.GetPtr(obj->GetId()) == NULL);
+	idToObj.Set(obj->GetId(), std::move(obj));
+}
 ```
 
 
 **1b)** Printing out the list of all objects registered:
 ```
 #!c++
-    idToObj.ForEach([](int id, const shared_ptr<BaseObject> &obj) -> bool {
-    	printf("ID = %3d: %s\n", id, obj->GetName());
-		return false;	//continue iteration
-    });
+idToObj.ForEach([](int id, const shared_ptr<BaseObject> &obj) -> bool {
+	printf("ID = %3d: %s\n", id, obj->GetName());
+	return false;	//continue iteration
+});
 ```
 
 **1c)** Deleting an object:
 ```
 #!c++
-	idToObj.Remove(obj->GetId());	//note: works even if obj is already removed
-	...
+idToObj.Remove(obj->GetId());	//note: works even if obj is already removed
+...
 ```
 
 **2)** Checking array of integers for duplicates:
 ```
 #!c++
-	ArrayWithHash<int, bool> present;
-	for (int key : input)
-		if (present.SetIfNew(key, false))	//note: true is reserved as "empty"
-			return true;
-	return false;
+ArrayWithHash<int, bool> present;
+for (int key : input)
+	if (present.SetIfNew(key, false))	//note: true is reserved as "empty"
+		return true;
+return false;
 ```
 
-==========================================================================================
-
-* Why isn't interface STL-like?
+### Why isn't interface STL-like? ###
 
 The container has its own interface with custom methods.
 Interface of std::unordered_map is rather heavy and relies on things like iterators.
@@ -79,9 +76,7 @@ it usually uses lightweight methods and parameters, often with passing by value.
 Pointer-to-value is used instead of iterator, and ForEach is used for iteration instead of external loop with iterator.
 Look at the comments near public methods for brief documentation.
 
-==========================================================================================
-
-* What are special values? What are they used for?
+### What are special values? What are they used for? ###
 
 Since hash table part is stored in a flat array and array part may contain missing elements,
 it is necessary to choose several special values.
@@ -100,9 +95,7 @@ The "empty" value is chosen differently for different types:
  raw pointer: maximal representable pointer (almost)
  object types (e.g. smart pointers, STL strings): default-constructed value
 
-==========================================================================================
-
-* How to change special values?
+### How to change special values? ###
 
 Special values are defined in KeyTraits and ValueTraits types, which are template arguments of ArrayWithHash.
 Constants EMPTY_KEY and REMOVED_KEY in KeyTraits define special values for key type.
@@ -122,9 +115,7 @@ Perhaps the easiest approach is to create types inherited from the default trait
 	};
 	typedef ArrayWithHash<int, double, MyKeyTraits, MyValueTraits> IntToRealMap;
 
-==========================================================================================
-
-* What are compiler requirements?
+### What are compiler requirements? ###
 
 Any compiler with C++11 (or C++0x) support should be sufficient for proper usage of ArrayWithHash.
 C++11 compiler is recommended for using ArrayWithHash.
@@ -141,18 +132,14 @@ Currently the library is being tested on MSVC and MinGW GCC compilers.
 Visual C++ 2013 is being used to run tests, but version 2010 is also enough to use library in C++11 mode.
 If you have issues with using it on any compiler, please contact the author.
 
-==========================================================================================
-
-* Are there any requirements on the key type?
+### Are there any requirements on the key type? ###
 
 Of course, key must be a builtin integer, since arrays have integer indices.
 Both signed and unsigned integers can be used.
 Note that in case of signed keys, array optimization does not apply to negative indices.
 Using small integers (i.e. 16 or 8 bit) is heavily discouraged: only part of key space can be used in such case.
 
-==========================================================================================
-
-* Are there any requirements on the value type?
+### Are there any requirements on the value type? ###
 
 The main goal of ArrayWithHash design was making sure that it works as fast as possible in case if value type is primitive.
 However, most of object types can also be easily used with it.
@@ -170,9 +157,7 @@ Keep in mind that by default values are relocated with memcpy.
 If your value type is not trivially relocatable, you can disable memcpy optimization.
 More details are provided in a separate answer.
 
-==========================================================================================
-
-* How does it work? Give an algorithmic overview.
+### How does it work? Give an algorithmic overview. ###
 
 The container keeps its elements in two parts: array part and hash table part.
 Hash table is stored in a linear array (in fact, two separate arrays for keys and values).
@@ -199,9 +184,7 @@ After that maximum power-of-two size of hash table is chosen so that its fill ra
 Note that only the elements in the hash table part are analyzed in order to determine the new sizes.
 Sizes can never decrease as a result of reallocation.
 
-==========================================================================================
-
-* How to iterate over elements of container? What is equivalent of STL's iterator here?
+### How to iterate over elements of container? What is equivalent of STL's iterator here? ###
 
 In order to iterate over all the elements in the container, use ForEach method.
 It accepts a callback (usually a lambda) which would be called once for each element.
@@ -215,9 +198,7 @@ Quite obviously, any pointer-to-value may be invalidated on any reallocation.
 Reallocation can happen only inside methods: Set, SetIfNew, Reserve.
 Read explanation of the algorithm for more detailed information.
 
-==========================================================================================
-
-* What can be said about library performance?
+### What can be said about library performance? ###
 
 Performance was the main consideration when this library was implemented.
 ArrayWithHash is very well-optimized for operations within the array part, especially for primitive value types.
@@ -236,9 +217,7 @@ Although it is hard to claim any precise numbers, it is reasonable to expect:
  4-6 times speedup when working solely in the hash table part
 You can run these tests on your machine by running "TestsMain.exe -sc" after you build testing application.
 
-==========================================================================================
-
-* What is "relocate with memcpy", "trivially relocatable"?
+### What is "relocate with memcpy", "trivially relocatable"? ###
 
 This is a popular optimization of relocation in C++ which is not yet supported by the language standard.
 Hopefully, it would be included in future, as proposed by this draft:
@@ -257,10 +236,8 @@ In a dynamic array of trivially relocatable objects, it is also correct to call 
 This is a great optimization for std::vector-like containers, and it is enabled by default in ArrayWithHash.
 Note that this may result in crashes if you use ArrayWithHash for a value type which is not trivially relocatable.
 
-==========================================================================================
-
-* I have weird crashes with ArrayWithHash in my case.
-I suspect "relocate with memcpy" is a problem. Can I disable it?
+### I have weird crashes with ArrayWithHash in my case.
+I suspect "relocate with memcpy" is a problem. Can I disable it? ###
 
 If your class is not trivially relocatable, then it is absolutely necessary to disable this optimization for it.
 In particular, the optimization must be disabled for std::string value type, because its implementation in libstd uses SSO.
@@ -272,9 +249,7 @@ You can find more information about all these ways in ArrayWithHash_Traits.h.
 In order to disable optimization for a single type, simply write in global namespace (before any usages):
 	AWH_SET_RELOCATE_WITH_MEMCPY(std::string, false)	//disable optimization for std::string
 
-==========================================================================================
-
-* How can I change hash function used in the hash table part?
+### How can I change hash function used in the hash table part? ###
 
 You can define your own hash function in the KeyTraits type.
 The easiest way to achieve it is to create new traits type derived from default:
@@ -289,17 +264,13 @@ The easiest way to achieve it is to create new traits type derived from default:
 Note that return value of your hash function is taken modulo hash table size to find main cell (bucket) for an element.
 Hash table size if always some power of two.
 
-==========================================================================================
-
-* I have used ArrayWithHash in my project and now I want to remove it completely.
+### I have used ArrayWithHash in my project and now I want to remove it completely. ###
 
 Look at the StdMapWrapper class then.
 Its external interface is almost equivalent to that of ArrayWithHash, but it is based on std::map or std::unordered_map internally.
 It can help during the switch time.
 
-==========================================================================================
-
-* Why is the container growing so fast/slow?
+### Why is the container growing so fast/slow? ###
 
 ArrayWithHash should grow very fast when adding elements sequentally from zero, just like std::vector.
 Unlike most std::vector implementations, ArrayWithHash uses x2 growth factor instead of x1.5
@@ -307,10 +278,8 @@ As a bonus, ArrayWithHash uses realloc to increase array part size in most cases
 When you have large hash table part, reallocations stop being so fast,
 because the hash table is fully scanned during each reallocation.
 
-==========================================================================================
-
-* I have some problems with log2size function in ArrayWithHash_Utils.h
-What the hell is there? What is CLZ and BSR?
+### I have some problems with log2size function in ArrayWithHash_Utils.h
+What the hell is there? What is CLZ and BSR? ###
 
 log2size function finds minimal integer, such that its power-of-two exceeds given input value.
 This function is called for every element in the hash table part during each reallocation.
@@ -323,9 +292,7 @@ Note that there is also default slow implementation of log2size.
 If you have compilation problems, you can perhaps stick to this slow version.
 If you have performance problems (inside AdaptSizes private method), please contact author of the library.
 
-==========================================================================================
-
-* What are AWH_INLINE and AWH_NOINLINE for?
+### What are AWH_INLINE and AWH_NOINLINE for? ###
 
 Even modern smart compilers are not always perfect at decisions regarding inlining functions.
 Luckily, there are ways to force or forbid inlining of a function in most compilers.
@@ -335,9 +302,7 @@ Otherwise inlining behavior is completely up to your compiler.
 Although AWH_CONTROL_INLINING does not necessarily result in faster execution,
 it should protect you from code bloat due to excessive inlining.
 
-==========================================================================================
-
-* How to run tests of your library?
+### How to run tests of your library? ###
 
 Building test console application should be simple: just compile all the .cpp and .c files and link them together.
 On windows you can use batch scripts to do it (make sure your compiler is in PATH).
