@@ -21,11 +21,11 @@ Simply copy the following three headers into your source code repo:
 	ArrayWithHash_Utils.h
 ```
 Make sure that all these headers are in the include path of the compiler.
-Include directly only the ArrayWithHash.h file.
+Include directly only the *ArrayWithHash.h* file.
 
-ArrayWithHash library is licensed under the Boost Software License 1.0.
+ArrayWithHash library is licensed under the [Boost Software License 1.0](http://www.boost.org/LICENSE_1_0.txt).
 
-### Do you have any code sample? ###
+### Any code samples? ###
 
 **1a)** Reading list of objects and registering them by ID:
 ```
@@ -74,33 +74,40 @@ Interface of std::unordered_map is rather heavy and relies on things like iterat
 Since ArrayWithHash is mostly targeted at blazingly fast operations in the array part,
 it usually uses lightweight methods and parameters, often with passing by value.
 Pointer-to-value is used instead of iterator, and ForEach is used for iteration instead of external loop with iterator.
-Look at the comments near public methods for brief documentation.
+Look at the comments near public methods for brief documentation of the interface.
 
 ### What are special values? What are they used for? ###
 
 Since hash table part is stored in a flat array and array part may contain missing elements,
 it is necessary to choose several special values.
 Note that it is forbidden to use these values in valid elements.
-This is very similar to the requirements of the Google Hash Table library (see API section of https://github.com/sparsehash/sparsehash).
+This is very similar to the requirements of the [Google Hash Table](https://github.com/sparsehash/sparsehash) library (see API section).
 
 Here is the full list of special values:
-1. "Empty" key: used to mark empty cells (buckets) in the hash table.
-2. "Removed" key: used to mark cells (buckets) with removed elements in the hash table.
-3. "Empty" value: used to mark nonexistent elements in the array part.
 
-By default, two maximal representable integers are used as "empty" and "removed" keys.
-The "empty" value is chosen differently for different types:
- integer: maximal representable integer
- real: quiet NaN with all bits set
- raw pointer: maximal representable pointer (almost)
- object types (e.g. smart pointers, STL strings): default-constructed value
+1. *Empty* key: used to mark empty cells (buckets) in the hash table.
+
+2. *Removed* key: used to mark cells (buckets) with removed elements in the hash table.
+
+3. *Empty* value: used to mark nonexistent elements in the array part.
+
+By default, two maximal representable integers are used as *empty* and *removed* keys.
+The *empty* value is chosen differently for different types:
+
+* integer: maximal representable integer
+
+* real: quiet NaN with all bits set
+
+* raw pointer: maximal representable pointer (almost)
+
+* object types (e.g. smart pointers, STL strings): default-constructed value
 
 ### How to change special values? ###
 
 Special values are defined in KeyTraits and ValueTraits types, which are template arguments of ArrayWithHash.
 Constants EMPTY_KEY and REMOVED_KEY in KeyTraits define special values for key type.
-In ValueTraits, two methods IsEmpty and GetEmpty together define "empty" value for value type.
-Look DefaultKeyTraits and DefaultValueTraits structs in ArrayWithHash_Traits.h for details.
+In ValueTraits, two methods IsEmpty and GetEmpty together define *empty* value for value type.
+Look DefaultKeyTraits and DefaultValueTraits structs in *ArrayWithHash_Traits.h* for details.
 
 In order to change special values, you have to specify other types as template arguments.
 Perhaps the easiest approach is to create types inherited from the default traits types:
