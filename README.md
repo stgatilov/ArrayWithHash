@@ -111,7 +111,6 @@ Look DefaultKeyTraits and DefaultValueTraits structs in *ArrayWithHash_Traits.h*
 
 In order to change special values, you have to specify other types as template arguments.
 Perhaps the easiest approach is to create types inherited from the default traits types:
-
 ```
 #!c++
 struct MyKeyTraits : DefaultKeyTraits<int> {
@@ -233,49 +232,61 @@ You can run these tests on your machine by running "TestsMain.exe -sc" after you
 ### What is "relocate with memcpy", "trivially relocatable"? ###
 
 This is a popular optimization of relocation in C++ which is not yet supported by the language standard.
-Hopefully, it would be included in future, as proposed by this draft:
-	http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0023r0.pdf
-
+Hopefully, it would be included in future, as proposed by [this draft](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0023r0.pdf).
+	
 Relocation of an object is an operation equivalent to calling move constructor and then calling destructor on source:
-	void relocate(Type &destination, Type &source) {
-		new(&destination) Type (std::move(source));
-		source.~Type();
-	}
+```
+#!c++
+void relocate(Type &destination, Type &source) {
+	new(&destination) Type (std::move(source));
+	source.~Type();
+}
+```
 If memcpy-ing an object is a correct way to relocate it, then the object is called trivially relocatable.
 It turns out that almost all movable objects are trivially relocatable (e.g. std::vector, std::shared_ptr).
-Notable exceptions include objects which contain pointers into themselves, e.g. strings with short string optimization.
+Notable exceptions include objects which contain pointers into themselves, e.g. strings with [short string optimization](http://stackoverflow.com/a/10319672/556899).
 
 In a dynamic array of trivially relocatable objects, it is also correct to call realloc to increase array size.
 This is a great optimization for std::vector-like containers, and it is enabled by default in ArrayWithHash.
 Note that this may result in crashes if you use ArrayWithHash for a value type which is not trivially relocatable.
 
-### I have weird crashes with ArrayWithHash in my case.
-I suspect "relocate with memcpy" is a problem. Can I disable it? ###
+### I have weird crashes with ArrayWithHash in my case. I suspect "relocate with memcpy" is a problem. Can I disable it? ###
 
 If your class is not trivially relocatable, then it is absolutely necessary to disable this optimization for it.
-In particular, the optimization must be disabled for std::string value type, because its implementation in libstd uses SSO.
+In particular, the optimization must be disabled for std::string value type, because its implementation in libstd uses short string optimization.
 
 There are three ways to control "relocate with memcpy" behavior:
 you can disable it globally, you can disable it for specified types, and you can disable it in chosen containers.
-You can find more information about all these ways in ArrayWithHash_Traits.h.
+You can find more information about all these ways in *ArrayWithHash_Traits.h*.
 
 In order to disable optimization for a single type, simply write in global namespace (before any usages):
-	AWH_SET_RELOCATE_WITH_MEMCPY(std::string, false)	//disable optimization for std::string
+```
+#!c++
+//disable optimization for std::string:
+AWH_SET_RELOCATE_WITH_MEMCPY(std::string, false)	
+```
 
 ### How can I change hash function used in the hash table part? ###
 
 You can define your own hash function in the KeyTraits type.
 The easiest way to achieve it is to create new traits type derived from default:
-
-	struct GoodHashTraits : DefaultKeyTraits<int> {
-		static unsigned int HashFunction(int key) {
-			return unsigned(key) * 13;	//write whatever you like here
-		}
-	};
-	typedef ArrayWithHash<int, int, GoodHashTraits> GoodIntHashMap;
+```
+#!c++
+struct GoodHashTraits : DefaultKeyTraits<int> {
+	static unsigned int HashFunction(int key) {
+		unsigned int x = (unsigned int)key;
+		//from http://stackoverflow.com/a/12996028/556899
+		x = ((x >> 16) ^ x) * 0x45d9f3b;
+		x = ((x >> 16) ^ x) * 0x45d9f3b;
+		x = (x >> 16) ^ x;
+		return x;
+	}
+};
+typedef ArrayWithHash<int, int, GoodHashTraits> GoodIntHashMap;
+```
 
 Note that return value of your hash function is taken modulo hash table size to find main cell (bucket) for an element.
-Hash table size if always some power of two.
+Hash table size is always some power of two.
 
 ### I have used ArrayWithHash in my project and now I want to remove it completely. ###
 
@@ -286,24 +297,23 @@ It can help during the switch time.
 ### Why is the container growing so fast/slow? ###
 
 ArrayWithHash should grow very fast when adding elements sequentally from zero, just like std::vector.
-Unlike most std::vector implementations, ArrayWithHash uses x2 growth factor instead of x1.5
+Unlike most std::vector implementations, ArrayWithHash uses **x2** growth factor instead of **x1.5**.
 As a bonus, ArrayWithHash uses realloc to increase array part size in most cases (unless "relocate with memcpy" is disabled).
 When you have large hash table part, reallocations stop being so fast,
 because the hash table is fully scanned during each reallocation.
 
-### I have some problems with log2size function in ArrayWithHash_Utils.h
-What the hell is there? What is CLZ and BSR? ###
+### I have some problems with log2size function in ArrayWithHash_Utils.h. What the hell is there? What is CLZ and BSR? ###
 
-log2size function finds minimal integer, such that its power-of-two exceeds given input value.
+*log2size* function finds minimal integer, such that its power-of-two exceeds given input value.
 This function is called for every element in the hash table part during each reallocation.
-Unless you are sure that hash table part has negligible size in you case, it is important for log2size to work fast.
+Unless you are sure that hash table part has negligible size in you case, it is important for *log2size* to work fast.
 This is best achieved by using proper instructions supported by hardware.
-Bit Scan Reverse (BSR) is such instruction on x86 architecture.
-GCC has no direct intrinsic for this instruction, but __builtin_clz provides very similar functionality.
+[Bit Scan Reverse](http://www.felixcloutier.com/x86/BSR.html) (BSR) is such instruction on x86 architecture.
+GCC has no direct intrinsic for this instruction, but [__builtin_clz](http://stackoverflow.com/q/9353973/556899) provides very similar functionality.
 
-Note that there is also default slow implementation of log2size.
+Note that there is also default slow implementation of *log2size*.
 If you have compilation problems, you can perhaps stick to this slow version.
-If you have performance problems (inside AdaptSizes private method), please contact author of the library.
+If you have performance problems (inside *AdaptSizes* private method), please contact author of the library.
 
 ### What are AWH_INLINE and AWH_NOINLINE for? ###
 
@@ -319,9 +329,16 @@ it should protect you from code bloat due to excessive inlining.
 
 Building test console application should be simple: just compile all the .cpp and .c files and link them together.
 On windows you can use batch scripts to do it (make sure your compiler is in PATH).
-Then run the resulting executable TestsMain with appropriate parameters.
+Then run the resulting executable *TestsMain* with appropriate parameters.
 
 Here is the list of possible modes:
- TestsMain -t           //run random tests infinitely to check correctness (stops on error)
- TestsMain -s			//run performance measurements of ArrayWithHash
- TestsMain -sc			//run performance measurements and compare to STL equivalent
+
+* "**TestsMain -t**": run random tests infinitely to check correctness (stops on error).
+
+* "**TestsMain -t0**": same as above, but without excessive validation checks.
+
+* "**TestsMain -q -t0**": same as above, but without printing anything to stdout.
+
+* "**TestsMain -s**": run performance measurements of ArrayWithHash.
+
+* "**TestsMain -sc**": run performance measurements and compare to STL equivalent.
