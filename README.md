@@ -106,21 +106,24 @@ The *empty* value is chosen differently for different types:
 
 Special values are defined in KeyTraits and ValueTraits types, which are template arguments of ArrayWithHash.
 Constants EMPTY_KEY and REMOVED_KEY in KeyTraits define special values for key type.
-In ValueTraits, two methods IsEmpty and GetEmpty together define *empty* value for value type.
+In ValueTraits, two methods *IsEmpty* and *GetEmpty* together define "empty" value for value type.
 Look DefaultKeyTraits and DefaultValueTraits structs in *ArrayWithHash_Traits.h* for details.
 
 In order to change special values, you have to specify other types as template arguments.
 Perhaps the easiest approach is to create types inherited from the default traits types:
 
-	struct MyKeyTraits : DefaultKeyTraits<int> {
-		static const int EMPTY_KEY = (int)0xCCCCCCCC;
-		static const int REMOVED_KEY = (int)0xDEADBEEF;
-	};
-	struct MyValueTraits : DefaultValueTraits<double> {
-		static double GetEmpty() { return 1e+100; }
-		static bool IsEmpty(double value) { return value == GetEmpty(); }
-	};
-	typedef ArrayWithHash<int, double, MyKeyTraits, MyValueTraits> IntToRealMap;
+```
+#!c++
+struct MyKeyTraits : DefaultKeyTraits<int> {
+	static const int EMPTY_KEY = (int)0xCCCCCCCC;
+	static const int REMOVED_KEY = (int)0xDEADBEEF;
+};
+struct MyValueTraits : DefaultValueTraits<double> {
+	static double GetEmpty() { return 1e+100; }
+	static bool IsEmpty(double value) { return value == GetEmpty(); }
+};
+typedef ArrayWithHash<int, double, MyKeyTraits, MyValueTraits> IntToRealMap;
+```
 
 ### What are compiler requirements? ###
 
@@ -130,7 +133,7 @@ C++11 compiler is recommended for using ArrayWithHash.
 Compatibility with compilers based on C++03 is also maintained.
 You have to define AWH_NO_CPP11 macro in order to remove all C++11 features from the library.
 Note that in such case you have to define your own traits types, since there are no default ones.
-See Cpp03Test.cpp for a sample.
+See *Cpp03Test.cpp* for a sample.
 Also, it is not recommended to use large value types (e.g. std::string, std::vector) in C++03 mode,
 because without move semantics temporary copies of value objects would be created.
 You can use std::shared_ptr-s or raw pointers instead.
@@ -148,12 +151,12 @@ Using small integers (i.e. 16 or 8 bit) is heavily discouraged: only part of key
 
 ### Are there any requirements on the value type? ###
 
-The main goal of ArrayWithHash design was making sure that it works as fast as possible in case if value type is primitive.
-However, most of object types can also be easily used with it.
-For example, the following types are OK to used as values: std::unique_ptr, std::shared_ptr, std::string.
+The main goal of ArrayWithHash design was making sure that it works as fast as possible in the case when value type is primitive.
+However, most of the object types can also be easily used with it.
+For example, the following types are OK to be used as values: std::unique_ptr, std::shared_ptr, std::string.
 
 As a general requirement, any value type must be movable (or copyable in C++03 mode).
-The method "Get" is a bit special: it requires values to be copyable even in C++11 mode.
+The method *Get* is a bit special: it requires values to be copyable even in C++11 mode.
 All the other methods avoid making copies, they move values instead (in C++11 mode).
 
 Also keep in mind that it must be possible to define an "empty" value.
@@ -193,16 +196,16 @@ Sizes can never decrease as a result of reallocation.
 
 ### How to iterate over elements of container? What is equivalent of STL's iterator here? ###
 
-In order to iterate over all the elements in the container, use ForEach method.
+In order to iterate over all the elements in the container, use *ForEach* method.
 It accepts a callback (usually a lambda) which would be called once for each element.
 You can also terminate iteration prematurely if you want.
 Look comments near this method for details.
 
 Pointers to values are used instead of iterators in ArrayWithHash.
-They are returned from methods like GetPtr and SetIfNew.
+They are returned from methods like *GetPtr* and *SetIfNew*.
 They can be used to remove elements or change their values.
 Quite obviously, any pointer-to-value may be invalidated on any reallocation.
-Reallocation can happen only inside methods: Set, SetIfNew, Reserve.
+Reallocation can happen only inside methods: *Set*, *SetIfNew*, *Reserve*.
 Read explanation of the algorithm for more detailed information.
 
 ### What can be said about library performance? ###
@@ -213,15 +216,18 @@ For best results, ensure that NDEBUG macro is defined: library uses asserts from
 You can also define macro AWH_CONTROL_INLINING to make sure that inlining behavior is as intended.
 
 The following can be said regarding branches in the code.
-When working entirely within array part, there are no unpredictable branches (except for SetIfNew method).
+When working entirely within array part, there are no unpredictable branches (except for *SetIfNew* method).
 There is a single branch to check if the operation falls into the array part in each method.
 It becomes unpredictable when you mix operations across two parts of the container.
 
 Several benchmarks were run to compare performance of ArrayWithHash to performance of std::unordered_map.
 They are simple and very artificial in nature, testing only int32+int32 key-value pairs.
 Although it is hard to claim any precise numbers, it is reasonable to expect:
- 20-50 times speedup when working solely in the array part
- 4-6 times speedup when working solely in the hash table part
+
+* **20-50 times speedup** when working solely in the array part
+
+* **4-6 times speedup** when working solely in the hash table part
+
 You can run these tests on your machine by running "TestsMain.exe -sc" after you build testing application.
 
 ### What is "relocate with memcpy", "trivially relocatable"? ###
