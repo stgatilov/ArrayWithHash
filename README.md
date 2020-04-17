@@ -1,3 +1,5 @@
+*Migrated from: https://bitbucket.org/stgatilov/arraywithhash/*
+
 The ArrayWithHash container is an integer-keyed hash table with array optimization for small positive keys.
 Equivalently, it is an array with hash table backup for large and negative indices.
 It consists of two automatically managed parts: array part and hash table part.
