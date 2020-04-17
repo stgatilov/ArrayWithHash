@@ -28,8 +28,7 @@ ArrayWithHash library is licensed under the [Boost Software License 1.0](http://
 ### Any code samples? ###
 
 **1a)** Reading list of objects and registering them by ID:
-```
-#!c++
+```cpp
 ArrayWithHash<int, shared_ptr<BaseObject>> idToObj;
 ...
 while (!feof(input_file)) {
@@ -42,8 +41,7 @@ while (!feof(input_file)) {
 
 
 **1b)** Printing out the list of all objects registered:
-```
-#!c++
+```cpp
 idToObj.ForEach([](int id, const shared_ptr<BaseObject> &obj) -> bool {
 	printf("ID = %3d: %s\n", id, obj->GetName());
 	return false;	//continue iteration
@@ -51,15 +49,13 @@ idToObj.ForEach([](int id, const shared_ptr<BaseObject> &obj) -> bool {
 ```
 
 **1c)** Deleting an object:
-```
-#!c++
+```cpp
 idToObj.Remove(obj->GetId());	//note: works even if obj is already removed
 ...
 ```
 
 **2)** Checking array of integers for duplicates:
-```
-#!c++
+```cpp
 ArrayWithHash<int, bool> present;
 for (int key : input)
 	if (present.SetIfNew(key, false))	//note: true is reserved as "empty"
@@ -111,8 +107,7 @@ Look DefaultKeyTraits and DefaultValueTraits structs in *ArrayWithHash_Traits.h*
 
 In order to change special values, you have to specify other types as template arguments.
 Perhaps the easiest approach is to create types inherited from the default traits types:
-```
-#!c++
+```cpp
 struct MyKeyTraits : DefaultKeyTraits<int> {
 	static const int EMPTY_KEY = (int)0xCCCCCCCC;
 	static const int REMOVED_KEY = (int)0xDEADBEEF;
@@ -235,8 +230,7 @@ This is a popular optimization of relocation in C++ which is not yet supported b
 Hopefully, it would be included in future, as proposed by [this draft](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0023r0.pdf).
 	
 Relocation of an object is an operation equivalent to calling move constructor and then calling destructor on source:
-```
-#!c++
+```cpp
 void relocate(Type &destination, Type &source) {
 	new(&destination) Type (std::move(source));
 	source.~Type();
@@ -260,8 +254,7 @@ you can disable it globally, you can disable it for specified types, and you can
 You can find more information about all these ways in *ArrayWithHash_Traits.h*.
 
 In order to disable optimization for a single type, simply write in global namespace (before any usages):
-```
-#!c++
+```cpp
 //disable optimization for std::string:
 AWH_SET_RELOCATE_WITH_MEMCPY(std::string, false)	
 ```
@@ -270,8 +263,7 @@ AWH_SET_RELOCATE_WITH_MEMCPY(std::string, false)
 
 You can define your own hash function in the KeyTraits type.
 The easiest way to achieve it is to create new traits type derived from default:
-```
-#!c++
+```cpp
 struct GoodHashTraits : DefaultKeyTraits<int> {
 	static unsigned int HashFunction(int key) {
 		unsigned int x = (unsigned int)key;
